@@ -94,10 +94,17 @@ class CursorDashboardClient:
         if not last_snapshot:
             return None
 
-        if not env_cookie and not self._snapshot_has_usage(last_snapshot):
-            self.last_error = (
-                "auto cookie returned empty usage; set CURSOR_DASHBOARD_COOKIE"
-            )
+        allow_zero = os.getenv("CURSOR_ALLOW_ZERO_USAGE") == "1"
+        if not self._snapshot_has_usage(last_snapshot) and not allow_zero:
+            if env_cookie:
+                self.last_error = (
+                    "dashboard returned empty usage; verify cookie or set "
+                    "CURSOR_ALLOW_ZERO_USAGE=1"
+                )
+            else:
+                self.last_error = (
+                    "auto cookie returned empty usage; set CURSOR_DASHBOARD_COOKIE"
+                )
             return None
 
         self._cached_snapshot = last_snapshot

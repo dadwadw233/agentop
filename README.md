@@ -125,6 +125,12 @@ session cookie and may break if Cursor changes their backend.
 export CURSOR_DASHBOARD_COOKIE="WorkosCursorSessionToken=...; ..."
 ```
 
+If the dashboard returns empty usage with a valid cookie (rare), you can allow zeros:
+
+```bash
+export CURSOR_ALLOW_ZERO_USAGE=1
+```
+
 ## Architecture
 
 ```

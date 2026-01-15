@@ -387,6 +387,8 @@ class CursorPanel(Static):
             usage_table.add_row("Reason:", f"[dim]{reason}[/dim]")
             if "CURSOR_DASHBOARD_COOKIE" in metrics.usage_error:
                 usage_table.add_row("Hint:", "[dim]Set CURSOR_DASHBOARD_COOKIE[/dim]")
+            if "CURSOR_ALLOW_ZERO_USAGE" in metrics.usage_error:
+                usage_table.add_row("Hint:", "[dim]Set CURSOR_ALLOW_ZERO_USAGE=1[/dim]")
         else:
             usage_table.add_row(
                 "Billing:",

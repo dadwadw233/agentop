@@ -27,7 +27,7 @@ class CursorCookieProvider:
         env_cookie = os.getenv("CURSOR_DASHBOARD_COOKIE")
         if env_cookie:
             self.last_error = None
-            return [env_cookie]
+            return [self._normalize_cookie(env_cookie)]
         self.last_error = "CURSOR_DASHBOARD_COOKIE not set"
         return []
 
@@ -51,3 +51,11 @@ class CursorCookieProvider:
                 continue
             ordered.append(f"{name}={value}")
         return "; ".join(ordered)
+
+    def _normalize_cookie(self, cookie: str) -> str:
+        cookie = cookie.strip()
+        if (cookie.startswith('"') and cookie.endswith('"')) or (
+            cookie.startswith("'") and cookie.endswith("'")
+        ):
+            cookie = cookie[1:-1]
+        return cookie

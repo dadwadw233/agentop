@@ -6,6 +6,7 @@ Based on Antigravity-Manager's db.rs and protobuf.rs implementations.
 
 import base64
 import logging
+import os
 import sqlite3
 import time
 from dataclasses import dataclass
@@ -40,7 +41,6 @@ class GoogleAuthExtractor:
     STATE_KEY = "jetskiStateSync.agentManagerInitState"
 
     CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
-    CLIENT_SECRET = "REDACTED"
     TOKEN_URL = "https://oauth2.googleapis.com/token"
 
     def __init__(self):
@@ -218,12 +218,18 @@ class GoogleAuthExtractor:
         )
 
     def _refresh_access_token(self, refresh_token: str) -> Optional[OAuthToken]:
+        client_id = os.getenv("ANTIGRAVITY_OAUTH_CLIENT_ID", self.CLIENT_ID)
+        client_secret = os.getenv("ANTIGRAVITY_OAUTH_CLIENT_SECRET")
+        if not client_secret:
+            logger.warning("Antigravity OAuth client secret not set; skipping refresh")
+            return None
+
         try:
             response = httpx.post(
                 self.TOKEN_URL,
                 data={
-                    "client_id": self.CLIENT_ID,
-                    "client_secret": self.CLIENT_SECRET,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
                     "refresh_token": refresh_token,
                     "grant_type": "refresh_token",
                 },

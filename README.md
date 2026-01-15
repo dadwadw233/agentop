@@ -13,20 +13,25 @@ A terminal UI tool for monitoring local AI coding agents — like `nvtop`/`htop`
 
 | Agent | Process Monitor | Usage Stats | Quota | Status |
 |-------|----------------|-------------|-------|--------|
-| **Claude Code** | ✅ | ✅ | ⏳ | Stable |
+| **Claude Code** | ✅ | ✅ | ✅ | Stable |
 | **Antigravity** | ⏳ | ⏳ | ✅ | Beta |
 | **OpenAI Codex** | ✅ | ✅ | ✅ | Beta |
 
-## Supported Platforms
+## Supported Platforms (has been tested)
 
 - macOS
 - Linux
 
 ## Installation (macOS / Linux)
 
-### pipx (recommended)
+### PyPI
 ```bash
-pipx install git+https://github.com/dadwadw233/agentop.git
+pip install agentop
+```
+
+### pipx
+```bash
+pipx install agentop
 ```
 
 ### From source
@@ -69,6 +74,7 @@ python3 show_stats.py
 - Claude stats can lag behind real time
 - Codex usage is fetched from the API (not local files)
 - Antigravity quota depends on account access
+- Antigravity refresh requires `ANTIGRAVITY_OAUTH_CLIENT_SECRET` or a fresh login
 
 ## License
 

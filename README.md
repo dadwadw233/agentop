@@ -20,7 +20,7 @@ A terminal UI tool for monitoring local AI coding agents (Claude Code, Cursor, C
 | Agent | Process Monitor | Usage Stats | Cost Tracking | Status |
 |-------|----------------|-------------|---------------|--------|
 | **Claude Code** | ✅ | ✅ | ✅ | **MVP Complete** |
-| **Cursor** | ✅ | ⏳ | ⏳ | Process monitoring only |
+| **Cursor** | ✅ | ⚠️ | ⚠️ | Dashboard usage (unstable) |
 | **GitHub Copilot** | ⏳ | ⏳ | ⏳ | Planned |
 | **OpenAI Codex** | ✅ | ⏳ | ⏳ | Process monitoring + local logs (beta) |
 
@@ -111,8 +111,19 @@ Agent Monitor reads from:
 - **Usage stats**: `~/.claude/stats-cache.json` (updated by Claude Code)
 - **Pricing**: Built-in Claude pricing table
 - **Codex quota (beta)**: `/usage` API via Codex auth (`~/.codex/auth.json`)
+- **Cursor usage (unstable)**: private dashboard API using `CURSOR_DASHBOARD_COOKIE` (subject to change)
 
 **Note**: Today's usage may show as $0 if `stats-cache.json` hasn't been updated yet (last update: check file date).
+
+### Cursor dashboard usage (unstable)
+Cursor usage/cost data is fetched from private dashboard endpoints. This requires a valid
+session cookie and may break if Cursor changes their backend.
+
+Set the cookie at runtime (do not commit it):
+
+```bash
+export CURSOR_DASHBOARD_COOKIE="WorkosCursorSessionToken=...; ..."
+```
 
 ## Architecture
 
@@ -158,7 +169,7 @@ ruff check agent_monitor/
 - [x] Real-time TUI
 
 ### 🚧 Phase 2: Multi-Agent (Next)
-- [ ] Cursor usage stats
+- [x] Cursor usage stats (dashboard API, unstable)
 - [ ] Copilot monitoring
 - [ ] Configuration system (YAML)
 - [ ] Multiple panels in TUI

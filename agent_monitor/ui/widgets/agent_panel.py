@@ -387,8 +387,6 @@ class CursorPanel(Static):
             usage_table.add_row("Reason:", f"[dim]{reason}[/dim]")
             if "CURSOR_DASHBOARD_COOKIE" in metrics.usage_error:
                 usage_table.add_row("Hint:", "[dim]Set CURSOR_DASHBOARD_COOKIE[/dim]")
-            if "browser-cookie3" in metrics.usage_error:
-                usage_table.add_row("Hint:", "[dim]pip install -e .[cursor][/dim]")
         else:
             usage_table.add_row(
                 "Billing:",

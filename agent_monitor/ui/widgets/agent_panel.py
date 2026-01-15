@@ -359,10 +359,10 @@ class CodexPanel(Static):
         if metrics.active_sessions > 0:
             session_table.add_row(
                 "Sessions:",
-                f"[green]{metrics.active_sessions} active[/green] • {metrics.total_sessions_today} today",
+                f"[green]{metrics.active_sessions} active[/green]",
             )
         else:
-            session_table.add_row("Sessions:", f"{metrics.total_sessions_today} today")
+            session_table.add_row("Sessions:", "0 active")
 
         content_parts.append(Text(""))  # Spacer
         content_parts.append(session_table)

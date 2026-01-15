@@ -2,33 +2,33 @@
 
 ## 📋 Summary
 
-Based on user feedback, the quota tracking feature has been **completely removed** from Agent Monitor. The reason: **estimated quota data is inaccurate and potentially misleading**.
+Based on user feedback, the quota tracking feature has been **completely removed** from Agentop. The reason: **estimated quota data is inaccurate and potentially misleading**.
 
 ## ❌ What Was Removed
 
 ### 1. Code Components
 
 **Deleted Files:**
-- `agent_monitor/core/config.py` - Quota configuration system
+- `agentop/core/config.py` - Quota configuration system
 - `configure_quotas.py` - Interactive quota setup tool
 - `QUOTA_TRACKING.md` - Quota documentation
 - `QUOTA_IMPLEMENTATION_COMPLETE.md` - Implementation notes
 
 **Modified Files:**
-- `agent_monitor/core/models.py`:
+- `agentop/core/models.py`:
   - Removed `QuotaStatus` dataclass
   - Removed `quota_five_hour`, `quota_monthly`, `tokens_five_hour` from `ClaudeCodeMetrics`
   - Removed `quota_percent` and `is_near_quota_limit` properties
 
-- `agent_monitor/parsers/stats_parser.py`:
+- `agentop/parsers/stats_parser.py`:
   - Removed `get_five_hour_usage()` method (inaccurate estimation)
 
-- `agent_monitor/monitors/claude_code.py`:
+- `agentop/monitors/claude_code.py`:
   - Removed quota configuration loading
   - Removed `QuotaStatus` object creation
   - Removed quota-related imports
 
-- `agent_monitor/ui/widgets/agent_panel.py`:
+- `agentop/ui/widgets/agent_panel.py`:
   - Removed quota display section (progress bars, status icons)
   - Removed `_check_quota_warnings()` method
   - Removed `_last_warning_state` tracking
@@ -51,7 +51,7 @@ Based on user feedback, the quota tracking feature has been **completely removed
 
 ## ✅ What Remains (Accurate Data Only)
 
-Agent Monitor now focuses on **100% accurate, API-provided data**:
+Agentop now focuses on **100% accurate, API-provided data**:
 
 ✅ **Real-time Process Monitoring**
 - CPU usage (from psutil)
@@ -129,7 +129,7 @@ Claude's API **does not expose quota information**. The removed implementation t
 
 ## 🎯 Design Philosophy
 
-Agent Monitor now follows a **"Accuracy First"** principle:
+Agentop now follows a **"Accuracy First"** principle:
 
 ```
 ✅ Show ONLY what we can measure accurately
@@ -160,16 +160,16 @@ To monitor your quota:
 1. **Visit**: [console.anthropic.com](https://console.anthropic.com)
 2. **Navigate to**: Usage dashboard
 3. **View**: Your actual quota limits and usage
-4. **Compare** with Agent Monitor's token display
+4. **Compare** with Agentop's token display
 
-**Agent Monitor shows accurate tokens consumed - you interpret against your known limits.**
+**Agentop shows accurate tokens consumed - you interpret against your known limits.**
 
 ## 🧪 Verification
 
 After removal, the tool was tested and confirmed working:
 
 ```bash
-$ python3 -c "from agent_monitor.monitors.claude_code import ClaudeCodeMonitor; ..."
+$ python3 -c "from agentop.monitors.claude_code import ClaudeCodeMonitor; ..."
 
 ✅ Code compiles and runs!
 
@@ -188,7 +188,7 @@ Cost (Month): $1.53
 ### 1. Run the Monitor
 
 ```bash
-agent-monitor
+agentop
 ```
 
 ### 2. Watch Your Token Usage
@@ -212,7 +212,7 @@ Do the math yourself with accurate data!
 
 ```bash
 # Example: Alert when reaching 4M tokens
-watch -n 60 'agent-monitor | grep "Tokens (Month)" | grep -o "[0-9,]*" | head -1 | sed "s/,//g" | awk "{if(\$1>4000000) print \"WARNING: High usage!\"}"'
+watch -n 60 'agentop | grep "Tokens (Month)" | grep -o "[0-9,]*" | head -1 | sed "s/,//g" | awk "{if(\$1>4000000) print \"WARNING: High usage!\"}"'
 ```
 
 ## 📖 Related Documentation
@@ -223,7 +223,7 @@ watch -n 60 'agent-monitor | grep "Tokens (Month)" | grep -o "[0-9,]*" | head -1
 
 ## 🎊 Result
 
-Agent Monitor is now **simpler, more reliable, and 100% accurate**:
+Agentop is now **simpler, more reliable, and 100% accurate**:
 
 - ✅ No confusing estimated data
 - ✅ No misleading quota warnings

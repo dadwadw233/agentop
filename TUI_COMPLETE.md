@@ -1,6 +1,6 @@
 # 🎉 TUI 界面完成！
 
-Agent Monitor 的实时 TUI 界面已经完成并可以使用了！
+Agentop 的实时 TUI 界面已经完成并可以使用了！
 
 ## ✅ 完成的功能
 
@@ -67,7 +67,7 @@ Agent Monitor 的实时 TUI 界面已经完成并可以使用了！
 
 **架构**：
 ```python
-AgentMonitorApp (Textual App)
+AgentopApp (Textual App)
   └─ ClaudeCodePanel (Widget)
       ├─ ClaudeCodeMonitor (数据采集)
       │   ├─ ProcessMonitor (进程监控)
@@ -92,12 +92,12 @@ AgentMonitorApp (Textual App)
 
 ### 方式 1：命令行工具（推荐）
 ```bash
-agent-monitor
+agentop
 ```
 
 ### 方式 2：Python 模块
 ```bash
-python3 -m agent_monitor
+python3 -m agentop
 ```
 
 ### 方式 3：Shell 脚本
@@ -107,7 +107,7 @@ python3 -m agent_monitor
 
 ### 方式 4：直接运行
 ```bash
-python3 -c "from agent_monitor.ui.app import main; main()"
+python3 -c "from agentop.ui.app import main; main()"
 ```
 
 ## 📊 显示的真实数据
@@ -145,12 +145,12 @@ CPU > 90%:  ████████████████ (红色)
 
 ## 📝 与其他工具对比
 
-| 工具 | 类型 | 实时性 | 显示内容 | Agent Monitor |
+| 工具 | 类型 | 实时性 | 显示内容 | Agentop |
 |------|------|--------|----------|---------------|
 | `nvtop` | TUI | ✅ 实时 | GPU | 参考灵感 |
 | `ccusage` | CLI | ❌ 历史 | Claude Code | 类似功能 |
 | `htop` | TUI | ✅ 实时 | 进程 | 类似 UI |
-| **Agent Monitor** | **TUI** | **✅ 实时** | **AI Agents** | **本项目** |
+| **Agentop** | **TUI** | **✅ 实时** | **AI Agents** | **本项目** |
 
 ## 🐛 已知问题
 
@@ -204,7 +204,7 @@ CPU > 90%:  ████████████████ (红色)
 ### 日常监控
 ```bash
 # 开启终端，运行监控
-agent-monitor
+agentop
 
 # 保持运行在后台终端
 # 随时查看使用情况
@@ -222,7 +222,7 @@ python3 show_stats.py
 ### 费用控制
 ```bash
 # 定期检查 TUI
-agent-monitor
+agentop
 
 # 关注 "Cost (Month)" 数值
 # 如接近预算，调整使用频率
@@ -237,7 +237,7 @@ agent-monitor
 
 ## 🎊 总结
 
-Agent Monitor TUI 现在是一个**功能完整、可以实际使用**的工具！
+Agentop TUI 现在是一个**功能完整、可以实际使用**的工具！
 
 你可以：
 1. 实时监控 Claude Code 的资源使用
@@ -247,7 +247,7 @@ Agent Monitor TUI 现在是一个**功能完整、可以实际使用**的工具�
 
 **立即试用**：
 ```bash
-agent-monitor
+agentop
 ```
 
 享受你的 AI Agent 监控工具！🚀

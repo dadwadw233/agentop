@@ -1,4 +1,4 @@
-# Agent Monitor - 项目构建方案
+# Agentop - 项目构建方案
 
 ## 项目概述
 
@@ -42,8 +42,8 @@ platformdirs==4.3.0    # 跨平台目录
 ## 项目架构
 
 ```
-agent-monitor/
-├── agent_monitor/
+agentop/
+├── agentop/
 │   ├── __init__.py
 │   ├── __main__.py              # 入口点
 │   │
@@ -243,7 +243,7 @@ class ClaudeLogParser:
 
 **布局结构**
 ```
-┌─ Agent Monitor ─────────────────────────────────────────────────────┐
+┌─ Agentop ─────────────────────────────────────────────────────┐
 │ 🟢 3 agents running | ⏱ Uptime: 2h 34m | 💾 Cache: 1.2GB          │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
@@ -292,8 +292,8 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static
 from textual.containers import Container, Vertical
 
-class AgentMonitorApp(App):
-    """Agent Monitor TUI Application"""
+class AgentopApp(App):
+    """Agentop TUI Application"""
 
     CSS = """
     .agent-panel {
@@ -389,12 +389,12 @@ ui:
   compact_mode: false
 
 storage:
-  database_path: "~/.agent-monitor/data.db"
+  database_path: "~/.agentop/data.db"
   max_size_mb: 100
 
 logging:
   level: "INFO"
-  file: "~/.agent-monitor/logs/monitor.log"
+  file: "~/.agentop/logs/monitor.log"
 ```
 
 ## 数据存储（SQLite）
@@ -470,26 +470,26 @@ CREATE TABLE alerts (
 **安装**
 ```bash
 # 从 PyPI 安装（未来）
-pip install agent-monitor
+pip install agentop
 
 # 或者从源码
-git clone https://github.com/yourusername/agent-monitor.git
-cd agent-monitor
+git clone https://github.com/yourusername/agentop.git
+cd agentop
 pip install -e .
 ```
 
 **使用**
 ```bash
 # 基本使用
-agent-monitor
+agentop
 
 # 指定配置
-agent-monitor --config ~/.agent-monitor/config.yaml
+agentop --config ~/.agentop/config.yaml
 
 # 仅监控特定 agent
 
 # 紧凑模式
-agent-monitor --compact
+agentop --compact
 ```
 
 ## 技术挑战与解决方案
@@ -529,7 +529,7 @@ agent-monitor --compact
 | ccusage | CLI | 历史分析强 | 无实时监控、无进程监控 |
 | AgentOps | Web Dashboard | 功能全面 | 需要集成、非本地 |
 | nvtop | TUI | 实时性好 | GPU 专用 |
-| **Agent Monitor** | TUI | **本地实时 + 多 agent + 进程监控** | 新项目、需要构建 |
+| **Agentop** | TUI | **本地实时 + 多 agent + 进程监控** | 新项目、需要构建 |
 
 ## 后续扩展方向
 

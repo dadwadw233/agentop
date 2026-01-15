@@ -38,8 +38,8 @@ ENV/
 .coverage
 htmlcov/
 
-# Agent Monitor specific
-.agent-monitor/
+# Agentop specific
+.agentop/
 *.db
 *.log
 3rd/

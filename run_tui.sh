@@ -1,12 +1,12 @@
 #!/bin/bash
-# Script to run Agent Monitor TUI
+# Script to run Agentop TUI
 
-echo "🚀 Starting Agent Monitor TUI..."
+echo "🚀 Starting Agentop TUI..."
 echo "   Press Q to quit, R to refresh"
 echo ""
 
 # Run the TUI application
-python3 -m agent_monitor
+python3 -m agentop
 
 echo ""
-echo "✅ Agent Monitor closed"
+echo "✅ Agentop closed"

@@ -128,7 +128,7 @@ Claude Code 使用**本地文件系统**来追踪使用情况，完全在客户�
   "parentUuid": null,
   "isSidechain": false,
   "userType": "external",
-  "cwd": "/Users/yuyuanhong/projects/agent-monitor",
+  "cwd": "/Users/yuyuanhong/projects/agentop",
   "sessionId": "e0bab6cd-5809-47b3-b7ca-7b817a4613f1",
   "version": "2.1.6",
   "gitBranch": "",
@@ -347,9 +347,9 @@ class UsageTracker {
 - **批量读取聚合**：定期读取所有会话日志，聚合到缓存
 - **原子性更新**：使用临时文件+重命名保证stats-cache.json完整性
 
-## 📊 与Agent Monitor的对比
+## 📊 与Agentop的对比
 
-| 功能 | Claude Code | Agent Monitor |
+| 功能 | Claude Code | Agentop |
 |------|-------------|---------------|
 | **数据来源** | 本地JSONL + API响应 | 读取stats-cache.json |
 | **Token统计** | 直接从API获取（精确） | 从缓存读取 |
@@ -372,7 +372,7 @@ quota_info = claude.get_quota()
 
 ### 2. stats-cache.json是唯一的本地统计源
 
-这就是为什么Agent Monitor必须：
+这就是为什么Agentop必须：
 - 读取这个文件获取使用数据
 - 用户手动配置quota限制
 - 估算5小时窗口（无实际数据）
@@ -441,7 +441,7 @@ print(response.quota_info)
 # }
 ```
 
-那么Agent Monitor就可以直接显示**精确的quota信息**，而不需要用户手动配置！
+那么Agentop就可以直接显示**精确的quota信息**，而不需要用户手动配置！
 
 ## 📚 总结
 
@@ -453,7 +453,7 @@ Claude Code的usage tracking是一个**客户端聚合系统**：
 4. **缓存优化**：大量使用prompt caching降低成本
 5. **无Quota API**：quota信息仅在Web Dashboard可见
 
-Agent Monitor通过读取stats-cache.json获取使用数据，并实现用户配置的quota追踪功能，弥补了API的不足。
+Agentop通过读取stats-cache.json获取使用数据，并实现用户配置的quota追踪功能，弥补了API的不足。
 
 ---
 
@@ -462,7 +462,7 @@ Agent Monitor通过读取stats-cache.json获取使用数据，并实现用户配
 - 会话日志：`~/.claude/projects/{project}/{session}.jsonl`
 - 命令历史：`~/.claude/history.jsonl`
 
-**Agent Monitor的价值**：
+**Agentop的价值**：
 - ✅ 实时可视化（TUI）
 - ✅ Quota估算和告警
 - ✅ 进程监控

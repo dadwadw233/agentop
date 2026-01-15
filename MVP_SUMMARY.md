@@ -1,8 +1,8 @@
-# Agent Monitor - MVP 完成总结
+# Agentop - MVP 完成总结
 
 ## 🎉 MVP 实现完成
 
-Agent Monitor 的第一个可运行版本（MVP）已成功实现并测试通过！
+Agentop 的第一个可运行版本（MVP）已成功实现并测试通过！
 
 ## ✅ 已实现的功能
 
@@ -34,7 +34,7 @@ Agent Monitor 的第一个可运行版本（MVP）已成功实现并测试通过
 ## 📊 测试结果（你的系统）
 
 ```
-🤖 Agent Monitor - MVP Test
+🤖 Agentop - MVP Test
 
 [Claude Code Processes]
   ✓ PID 54430: 2.1.6
@@ -64,10 +64,10 @@ pip install -e .
 ### 运行
 ```bash
 # 方式 1：命令行工具
-agent-monitor
+agentop
 
 # 方式 2：Python 模块
-python3 -m agent_monitor
+python3 -m agentop
 
 # 方式 3：统计脚本（查看数据输出）
 python3 show_stats.py
@@ -76,8 +76,8 @@ python3 show_stats.py
 ## 📂 项目结构
 
 ```
-agent-monitor/
-├── agent_monitor/           # 主包
+agentop/
+├── agentop/           # 主包
 │   ├── core/               # 数据模型和常量
 │   │   ├── models.py       # ProcessMetrics, ClaudeCodeMetrics 等
 │   │   └── constants.py    # Agent 配置、定价信息
@@ -185,7 +185,7 @@ Python >= 3.9
 
 ### 查看实时监控
 ```bash
-agent-monitor
+agentop
 ```
 
 ### 检查当前状态
@@ -195,7 +195,7 @@ python3 show_stats.py
 
 ### 编程接口
 ```python
-from agent_monitor.monitors.claude_code import ClaudeCodeMonitor
+from agentop.monitors.claude_code import ClaudeCodeMonitor
 
 monitor = ClaudeCodeMonitor()
 metrics = monitor.get_metrics()

@@ -1,4 +1,4 @@
-"""Data models for Agent Monitor."""
+"""Data models for Agentop."""
 
 from dataclasses import dataclass, field
 from datetime import datetime

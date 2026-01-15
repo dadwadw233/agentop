@@ -52,7 +52,7 @@ class ClaudeRateLimitClient:
         url = f"{base_url}/api/oauth/usage"
         headers = {
             "Authorization": f"Bearer {oauth['accessToken']}",
-            "User-Agent": "agent-monitor",
+            "User-Agent": "agentop",
             "Content-Type": "application/json",
             "anthropic-beta": self._BETA_HEADER,
         }

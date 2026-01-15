@@ -1,4 +1,4 @@
-# Agent Monitor - Quickstart Guide
+# Agentop - Quickstart Guide
 
 ## MVP 功能
 
@@ -14,7 +14,7 @@
 
 ```bash
 # 克隆或进入项目目录
-cd agent-monitor
+cd agentop
 
 # 安装（开发模式）
 pip install -e .
@@ -27,12 +27,12 @@ pip install textual rich psutil pydantic aiofiles httpx pyyaml platformdirs
 
 ### 方式 1：命令行工具
 ```bash
-agent-monitor
+agentop
 ```
 
 ### 方式 2：Python 模块
 ```bash
-python3 -m agent_monitor
+python3 -m agentop
 ```
 
 ## 测试结果
@@ -59,8 +59,8 @@ python3 -m agent_monitor
 ## TUI 界面预览
 
 ```
-┌─ Agent Monitor ──────────────────────────────────────────┐
-│ 🤖 Agent Monitor - MVP                                    │
+┌─ Agentop ──────────────────────────────────────────┐
+│ 🤖 Agentop - MVP                                    │
 ├──────────────────────────────────────────────────────────┤
 │                                                           │
 │ ┌─ CLAUDE CODE ────────────────────── 🟢 Active ───────┐ │
@@ -108,8 +108,8 @@ python3 -m agent_monitor
 ## 项目结构
 
 ```
-agent-monitor/
-├── agent_monitor/
+agentop/
+├── agentop/
 │   ├── core/              # 数据模型和常量
 │   │   ├── models.py      # ProcessMetrics, ClaudeCodeMetrics
 │   │   └── constants.py   # Agent 配置、定价信息

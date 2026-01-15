@@ -7,8 +7,10 @@ from .widgets.agent_panel import ClaudeCodePanel, CodexPanel
 from .widgets.antigravity_panel import AntigravityPanel
 
 
-class AgentMonitorApp(App):
-    """Agent Monitor TUI Application."""
+class AgentopApp(App):
+    """Agentop TUI Application."""
+
+    TITLE = "Agentop"
 
     CSS = """
     Screen {
@@ -152,7 +154,7 @@ class AgentMonitorApp(App):
 
 def main():
     """Main entry point."""
-    app = AgentMonitorApp()
+    app = AgentopApp()
     app.run()
 
 

@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-monitor"
+name = "agentop"
 version = "0.1.0"
 description = "A terminal UI tool for monitoring local AI coding agents (Claude Code, etc.)"
 readme = "README.md"
@@ -46,16 +46,16 @@ dev = [
 ]
 
 [project.scripts]
-agent-monitor = "agent_monitor.__main__:main"
+agentop = "agentop.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/agent-monitor"
-Repository = "https://github.com/yourusername/agent-monitor"
-Issues = "https://github.com/yourusername/agent-monitor/issues"
+Homepage = "https://github.com/yourusername/agentop"
+Repository = "https://github.com/yourusername/agentop"
+Issues = "https://github.com/yourusername/agentop/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agent_monitor*"]
+include = ["agentop*"]
 
 [tool.black]
 line-length = 100

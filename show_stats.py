@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Display detailed Claude Code statistics."""
 
-from agent_monitor.parsers.stats_parser import ClaudeStatsParser
-from agent_monitor.monitors.claude_code import ClaudeCodeMonitor
+from agentop.parsers.stats_parser import ClaudeStatsParser
+from agentop.monitors.claude_code import ClaudeCodeMonitor
 
 
 def main():
@@ -83,7 +83,7 @@ def main():
     print(f"     File location: {parser.stats_file}")
 
     print("\n" + "=" * 70)
-    print("💡 Tip: Run 'agent-monitor' for real-time TUI monitoring")
+    print("💡 Tip: Run 'agentop' for real-time TUI monitoring")
     print("=" * 70 + "\n")
 
 

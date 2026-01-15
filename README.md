@@ -1,8 +1,8 @@
-# Agent Monitor
+# Agentop
 
 A terminal UI tool for monitoring local AI coding agents (Claude Code, Copilot, etc.) - like `nvtop` for AI agents.
 
-![Agent Monitor](https://img.shields.io/badge/status-MVP%20Complete-success)
+![Agentop](https://img.shields.io/badge/status-MVP%20Complete-success)
 ![Python](https://img.shields.io/badge/python-3.9+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -35,22 +35,13 @@ A terminal UI tool for monitoring local AI coding agents (Claude Code, Copilot, 
 ### Fast install (pipx)
 ```bash
 # If you already have pipx:
-pipx install git+https://github.com/<YOUR_ORG>/agent-monitor.git
+pipx install git+https://github.com/<YOUR_ORG>/agentop.git
 ```
 
 ### From source
 ```bash
-# Clone and install
-git clone https://github.com/<YOUR_ORG>/agent-monitor.git
-cd agent-monitor
-pip install -e .
-```
-
-```bash
-# Clone or navigate to the project
-cd agent-monitor
-
-# Install in development mode
+git clone https://github.com/<YOUR_ORG>/agentop.git
+cd agentop
 pip install -e .
 ```
 
@@ -59,10 +50,10 @@ pip install -e .
 ### 1. Real-time TUI (Recommended)
 ```bash
 # Run the interactive terminal UI
-agent-monitor
+agentop
 
 # Or use Python module
-python3 -m agent_monitor
+python3 -m agentop
 
 # Or use the shell script
 ./run_tui.sh
@@ -120,7 +111,7 @@ Based on your `~/.claude/stats-cache.json`:
 
 ### Data Sources
 
-Agent Monitor reads from:
+Agentop reads from:
 - **Process info**: via `psutil` (real-time)
 - **Usage stats**: `~/.claude/stats-cache.json` (updated by Claude Code)
 - **Pricing**: Built-in Claude pricing table
@@ -132,8 +123,8 @@ Agent Monitor reads from:
 ## Architecture
 
 ```
-agent-monitor/
-├── agent_monitor/
+agentop/
+├── agentop/
 │   ├── core/              # Data models & constants
 │   ├── monitors/          # Process & usage monitoring
 │   ├── parsers/           # Stats file parsing
@@ -159,8 +150,8 @@ pip install -e ".[dev]"
 pytest
 
 # Format code
-black agent_monitor/
-ruff check agent_monitor/
+black agentop/
+ruff check agentop/
 ```
 
 ## Roadmap
@@ -220,7 +211,7 @@ python3 show_stats.py
 ### TUI not starting
 ```bash
 # Test imports
-python3 -c "from agent_monitor.ui.app import AgentMonitorApp"
+python3 -c "from agentop.ui.app import AgentopApp"
 
 # Check dependencies
 pip install -e .

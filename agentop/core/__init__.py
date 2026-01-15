@@ -1,4 +1,4 @@
-"""Core modules for Agent Monitor."""
+"""Core modules for Agentop."""
 
 from .models import ProcessMetrics, AgentMetrics, ClaudeCodeMetrics
 from .constants import AgentType

@@ -47,7 +47,7 @@ class CodexRateLimitClient:
         url = self._usage_url(base_url)
         headers = {
             "Authorization": f"Bearer {token}",
-            "User-Agent": "agent-monitor",
+            "User-Agent": "agentop",
         }
         if account_id:
             headers["ChatGPT-Account-Id"] = account_id

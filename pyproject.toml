@@ -44,6 +44,9 @@ dev = [
     "black>=24.0.0",
     "ruff>=0.6.0",
 ]
+cursor = [
+    "browser-cookie3>=0.19.1",
+]
 
 [project.scripts]
 agent-monitor = "agent_monitor.__main__:main"

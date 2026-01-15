@@ -119,7 +119,16 @@ Agent Monitor reads from:
 Cursor usage/cost data is fetched from private dashboard endpoints. This requires a valid
 session cookie and may break if Cursor changes their backend.
 
-Set the cookie at runtime (do not commit it):
+**Auto cookie detection (macOS):**
+- If available, Agent Monitor will try to read Cursor web cookies from your local
+  browser or the Cursor app itself.
+- Install the optional dependency:
+
+```bash
+pip install -e .[cursor]
+```
+
+**Manual fallback (do not commit it):**
 
 ```bash
 export CURSOR_DASHBOARD_COOKIE="WorkosCursorSessionToken=...; ..."

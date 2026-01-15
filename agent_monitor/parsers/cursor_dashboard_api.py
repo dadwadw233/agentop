@@ -71,11 +71,19 @@ class CursorDashboardClient:
             self.last_error = self.cookie_provider.last_error
             return None
 
+        start_override = os.getenv("CURSOR_USAGE_START_MS")
+        invoice_start_ms = None
+        if start_override:
+            try:
+                invoice_start_ms = int(start_override)
+            except ValueError:
+                invoice_start_ms = None
+
         now_ms = int(time.time() * 1000)
         last_snapshot = None
 
         for cookie in cookies:
-            period = self._fetch_monthly_invoice(cookie, now_ms)
+            period = self._fetch_monthly_invoice(cookie, invoice_start_ms or now_ms)
             if not period:
                 continue
 

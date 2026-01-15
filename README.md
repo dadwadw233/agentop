@@ -131,7 +131,7 @@ If the dashboard returns empty usage with a valid cookie (rare), you can allow z
 export CURSOR_ALLOW_ZERO_USAGE=1
 ```
 
-If the usage endpoint still returns `{}`, set the start date from the dashboard request:
+If the invoice or usage endpoint returns `{}`, set the start date from the dashboard request:
 
 ```bash
 export CURSOR_USAGE_START_MS=1767763069000

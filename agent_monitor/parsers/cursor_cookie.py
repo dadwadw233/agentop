@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -24,12 +25,31 @@ class CursorCookieProvider:
 
     def get_candidate_cookies(self) -> list[str]:
         """Return a list of candidate cookie headers in priority order."""
+        file_cookie = self._load_cookie_file()
+        if file_cookie:
+            self.last_error = None
+            return [self._normalize_cookie(file_cookie)]
+
         env_cookie = os.getenv("CURSOR_DASHBOARD_COOKIE")
         if env_cookie:
             self.last_error = None
             return [self._normalize_cookie(env_cookie)]
         self.last_error = "CURSOR_DASHBOARD_COOKIE not set"
         return []
+
+    def _load_cookie_file(self) -> Optional[str]:
+        path = os.getenv("CURSOR_DASHBOARD_COOKIE_FILE")
+        if not path:
+            return None
+        try:
+            content = Path(path).read_text(encoding="utf-8").strip()
+        except Exception:
+            self.last_error = "failed to read CURSOR_DASHBOARD_COOKIE_FILE"
+            return None
+        if not content:
+            self.last_error = "CURSOR_DASHBOARD_COOKIE_FILE is empty"
+            return None
+        return content
 
     def _cookie_header_from_map(self, cookies: dict[str, str]) -> Optional[str]:
         if not cookies:

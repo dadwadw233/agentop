@@ -125,6 +125,15 @@ session cookie and may break if Cursor changes their backend.
 export CURSOR_DASHBOARD_COOKIE="WorkosCursorSessionToken=...; ..."
 ```
 
+If your cookie contains quotes or JSON (easy to break in shell), use a file:
+
+```bash
+cat > /tmp/cursor_cookie.txt <<'EOF'
+cursor_anonymous_id=...; WorkosCursorSessionToken=...; ...; GCLB="..."
+EOF
+export CURSOR_DASHBOARD_COOKIE_FILE=/tmp/cursor_cookie.txt
+```
+
 If the dashboard returns empty usage with a valid cookie (rare), you can allow zeros:
 
 ```bash

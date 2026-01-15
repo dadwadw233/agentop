@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Yuanhong Yu", email = ""}
 ]
 keywords = ["ai", "monitoring", "tui", "claude", "agent"]
 classifiers = [
@@ -49,9 +49,9 @@ dev = [
 agentop = "agentop.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/agentop"
-Repository = "https://github.com/yourusername/agentop"
-Issues = "https://github.com/yourusername/agentop/issues"
+Homepage = "https://github.com/dadwadw233/agentop"
+Repository = "https://github.com/dadwadw233/agentop"
+Issues = "https://github.com/dadwadw233/agentop/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

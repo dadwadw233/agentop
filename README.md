@@ -35,12 +35,12 @@ A terminal UI tool for monitoring local AI coding agents (Claude Code, Copilot, 
 ### Fast install (pipx)
 ```bash
 # If you already have pipx:
-pipx install git+https://github.com/<YOUR_ORG>/agentop.git
+pipx install git+https://github.com/dadwadw233/agentop.git
 ```
 
 ### From source
 ```bash
-git clone https://github.com/<YOUR_ORG>/agentop.git
+git clone https://github.com/dadwadw233/agentop.git
 cd agentop
 pip install -e .
 ```

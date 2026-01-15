@@ -53,12 +53,12 @@ class CodexRateLimitClient:
             headers["ChatGPT-Account-Id"] = account_id
 
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=10.0, trust_env=self._trust_env()) as client:
                 response = client.get(url, headers=headers)
                 response.raise_for_status()
                 payload = response.json()
         except Exception as exc:
-            self._last_error = f"Rate limit fetch failed: {exc}"
+            self._last_error = self._format_proxy_error(exc, "Rate limit fetch failed")
             return None
 
         snapshot = self._parse_payload(payload)
@@ -142,6 +142,18 @@ class CodexRateLimitClient:
             if "/backend-api" not in base_url:
                 base_url = f"{base_url}/backend-api"
         return base_url
+
+    def _trust_env(self) -> bool:
+        return os.environ.get("AGENTOP_DISABLE_PROXY") != "1"
+
+    def _format_proxy_error(self, exc: Exception, prefix: str) -> str:
+        message = str(exc)
+        if "Unknown scheme for proxy URL" in message or "unknown scheme for proxy URL" in message:
+            return (
+                f"{prefix}: proxy scheme not supported. "
+                "Set AGENTOP_DISABLE_PROXY=1 or install httpx[socks]."
+            )
+        return f"{prefix}: {exc}"
 
     def _read_chatgpt_base_url(self, path: Path) -> Optional[str]:
         try:

@@ -68,6 +68,7 @@ python3 show_stats.py
 - Codex usage is fetched from the API (not local files)
 - Antigravity quota depends on account access
 - Antigravity refresh requires `ANTIGRAVITY_OAUTH_CLIENT_SECRET` or a fresh login
+- Proxy users: if you see “unknown scheme for proxy URL”, set `AGENTOP_DISABLE_PROXY=1` or install `httpx[socks]`
 
 ## License
 

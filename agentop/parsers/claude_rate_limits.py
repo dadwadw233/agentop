@@ -58,12 +58,12 @@ class ClaudeRateLimitClient:
         }
 
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=10.0, trust_env=self._trust_env()) as client:
                 response = client.get(url, headers=headers)
                 response.raise_for_status()
                 payload = response.json()
         except Exception as exc:
-            self._last_error = f"Quota fetch failed: {exc}"
+            self._last_error = self._format_proxy_error(exc, "Quota fetch failed")
             return None
 
         snapshot = self._parse_payload(payload)
@@ -80,6 +80,18 @@ class ClaudeRateLimitClient:
     def _resolve_base_url(self) -> str:
         base_url = os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
         return base_url.strip().rstrip("/")
+
+    def _trust_env(self) -> bool:
+        return os.environ.get("AGENTOP_DISABLE_PROXY") != "1"
+
+    def _format_proxy_error(self, exc: Exception, prefix: str) -> str:
+        message = str(exc)
+        if "Unknown scheme for proxy URL" in message or "unknown scheme for proxy URL" in message:
+            return (
+                f"{prefix}: proxy scheme not supported. "
+                "Set AGENTOP_DISABLE_PROXY=1 or install httpx[socks]."
+            )
+        return f"{prefix}: {exc}"
 
     def _load_oauth(self) -> Optional[Dict[str, Any]]:
         env_token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")

@@ -7,6 +7,7 @@ Based on Antigravity-Manager's quota.rs implementation.
 import httpx
 from typing import Optional, Dict, Any, List
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class AntigravityQuotaAPI:
             Tuple of (project_id, subscription_tier)
         """
         try:
-            with httpx.Client(timeout=self.TIMEOUT) as client:
+            with httpx.Client(timeout=self.TIMEOUT, trust_env=self._trust_env()) as client:
                 response = client.post(
                     self.LOAD_PROJECT_URL,
                     headers={
@@ -88,7 +89,7 @@ class AntigravityQuotaAPI:
             project_id = self._project_id or self.DEFAULT_PROJECT_ID
         
         try:
-            with httpx.Client(timeout=self.TIMEOUT) as client:
+            with httpx.Client(timeout=self.TIMEOUT, trust_env=self._trust_env()) as client:
                 response = client.post(
                     self.QUOTA_API_URL,
                     headers={
@@ -156,3 +157,6 @@ class AntigravityQuotaAPI:
             'models': models,
             'subscription_tier': self._subscription_tier,
         }
+
+    def _trust_env(self) -> bool:
+        return os.environ.get("AGENTOP_DISABLE_PROXY") != "1"

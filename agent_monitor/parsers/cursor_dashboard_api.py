@@ -159,7 +159,20 @@ class CursorDashboardClient:
         except ValueError:
             team_id_value = -1
 
-        payload = {"teamId": team_id_value, "startDate": period_start_ms}
+        start_override = os.getenv("CURSOR_USAGE_START_MS")
+        try:
+            start_ms = int(start_override) if start_override else period_start_ms
+        except ValueError:
+            start_ms = period_start_ms
+
+        payload = {"teamId": team_id_value, "startDate": start_ms}
+
+        end_override = os.getenv("CURSOR_USAGE_END_MS")
+        if end_override:
+            try:
+                payload["endDate"] = int(end_override)
+            except ValueError:
+                pass
         response = self._post(cookie, "get-aggregated-usage-events", payload)
         if not response:
             return None

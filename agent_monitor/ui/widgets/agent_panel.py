@@ -10,6 +10,7 @@ from typing import Optional
 
 from ...monitors.claude_code import ClaudeCodeMonitor
 from ...monitors.codex import CodexMonitor
+from ...monitors.cursor import CursorMonitor
 
 
 def _bar(value: float, total: float, width: int = 20) -> str:
@@ -80,6 +81,24 @@ def _format_timestamp(timestamp: Optional[datetime]) -> str:
     if not timestamp:
         return "Unknown"
     return timestamp.strftime("%Y-%m-%d %H:%M")
+
+
+def _format_tokens(value: int) -> str:
+    if value >= 1_000_000_000:
+        return f"{value / 1_000_000_000:.1f}B"
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.1f}M"
+    if value >= 1_000:
+        return f"{value / 1_000:.1f}K"
+    return f"{value}"
+
+
+def _format_period(start: Optional[datetime], end: Optional[datetime]) -> str:
+    if not start or not end:
+        return "Unknown"
+    if start.year != end.year:
+        return f"{start:%Y-%m-%d} - {end:%Y-%m-%d}"
+    return f"{start:%b %d} - {end:%b %d}"
 
 
 class ClaudeCodePanel(Static):
@@ -275,6 +294,164 @@ class ClaudeCodePanel(Static):
             content,
             title=title,
             border_style="blue" if metrics.is_active else "dim",
+            padding=(1, 2),
+        )
+
+
+class CursorPanel(Static):
+    """Panel for displaying Cursor metrics."""
+
+    def __init__(self, **kwargs):
+        """Initialize panel."""
+        super().__init__(**kwargs)
+        self.monitor = CursorMonitor()
+
+    def on_mount(self) -> None:
+        """Set up periodic refresh."""
+        self.set_interval(5.0, self.refresh_data)
+        self.refresh_data()
+
+    def refresh_data(self) -> None:
+        """Refresh the display with current metrics."""
+        try:
+            metrics = self.monitor.get_metrics()
+            rendered = self._render_metrics(metrics)
+            self.update(rendered)
+        except Exception as e:
+            self.update(f"[red]Error: {e}[/red]")
+
+    def _render_metrics(self, metrics) -> Panel:
+        # Status indicator
+        if metrics.is_active:
+            status_icon = "🟢"
+            status_text = "[bold green]Active[/bold green]"
+        else:
+            status_icon = "⚪"
+            status_text = "[dim]Idle[/dim]"
+
+        content_parts = []
+
+        # === PROCESS INFO ===
+        proc_table = Table.grid(padding=(0, 2), expand=True)
+        proc_table.add_column(style="bold cyan", width=18)
+        proc_table.add_column()
+
+        if metrics.processes:
+            proc_info = []
+            for proc in metrics.processes[:3]:
+                proc_info.append(f"PID {proc.pid}")
+            if len(metrics.processes) > 3:
+                proc_info.append(f"+{len(metrics.processes) - 3} more")
+
+            proc_table.add_row("Processes:", f"{len(metrics.processes)} running")
+            proc_table.add_row("", "[dim]" + ", ".join(proc_info) + "[/dim]")
+            proc_table.add_row(
+                "CPU:", f"{metrics.total_cpu:.1f}% {_bar(metrics.total_cpu, 100, 15)}"
+            )
+            proc_table.add_row("Memory:", f"{metrics.total_memory_mb:.0f} MB")
+
+            if metrics.processes:
+                uptime_hours = metrics.processes[0].uptime / 3600
+                proc_table.add_row("Uptime:", f"{uptime_hours:.1f} hours")
+        else:
+            proc_table.add_row("Processes:", "[dim]No processes running[/dim]")
+
+        content_parts.append(proc_table)
+
+        # === SESSION INFO ===
+        session_table = Table.grid(padding=(0, 2), expand=True)
+        session_table.add_column(style="bold cyan", width=18)
+        session_table.add_column()
+
+        if metrics.active_sessions > 0:
+            session_table.add_row(
+                "Sessions:",
+                f"[green]{metrics.active_sessions} active[/green]",
+            )
+        else:
+            session_table.add_row("Sessions:", "0 active")
+
+        content_parts.append(Text(""))
+        content_parts.append(session_table)
+
+        # === USAGE ===
+        usage_table = Table.grid(padding=(0, 2), expand=True)
+        usage_table.add_column(style="bold cyan", width=18)
+        usage_table.add_column()
+
+        if metrics.usage_error:
+            usage_table.add_row("Usage:", "[dim]Unavailable[/dim]")
+            reason = metrics.usage_error
+            if len(reason) > 64:
+                reason = reason[:61] + "..."
+            usage_table.add_row("Reason:", f"[dim]{reason}[/dim]")
+            if "CURSOR_DASHBOARD_COOKIE" in metrics.usage_error:
+                usage_table.add_row("Hint:", "[dim]Set CURSOR_DASHBOARD_COOKIE[/dim]")
+        else:
+            usage_table.add_row(
+                "Billing:",
+                _format_period(metrics.billing_period_start, metrics.billing_period_end),
+            )
+            usage_table.add_row(
+                "Tokens:",
+                f"{_format_tokens(metrics.total_tokens)} total",
+            )
+            usage_table.add_row(
+                "Cost:",
+                f"[bold green]${metrics.total_cost.amount:.2f}[/bold green]",
+            )
+            usage_table.add_row(
+                "  Input:", _format_tokens(metrics.total_input_tokens)
+            )
+            usage_table.add_row(
+                "  Output:", _format_tokens(metrics.total_output_tokens)
+            )
+            usage_table.add_row(
+                "  Cache W:", _format_tokens(metrics.total_cache_write_tokens)
+            )
+            usage_table.add_row(
+                "  Cache R:", _format_tokens(metrics.total_cache_read_tokens)
+            )
+
+        content_parts.append(Text(""))
+        content_parts.append(usage_table)
+
+        # === TOP MODELS ===
+        if metrics.aggregations:
+            model_table = Table.grid(padding=(0, 2), expand=True)
+            model_table.add_column(style="bold cyan", width=18)
+            model_table.add_column()
+
+            model_table.add_row("Top models:", "")
+            top_models = sorted(
+                metrics.aggregations,
+                key=lambda agg: agg.total_tokens,
+                reverse=True,
+            )[:5]
+
+            for agg in top_models:
+                label = agg.model_intent.replace("claude-", "")
+                label = label.replace("gemini-", "")
+                model_table.add_row(
+                    f"  {label}",
+                    f"{_format_tokens(agg.total_tokens)} • ${agg.total_cents / 100:.2f}",
+                )
+
+            content_parts.append(Text(""))
+            content_parts.append(model_table)
+
+        if metrics.stats_last_updated:
+            content_parts.append(
+                Text(f"[dim]Last updated: {_format_timestamp(metrics.stats_last_updated)}[/dim]")
+            )
+
+        content = Group(*content_parts)
+        title = f"[bold]🧭 CURSOR[/bold] {status_icon} {status_text}"
+
+        return Panel(
+            content,
+            title=title,
+            border_style="magenta" if metrics.is_active else "dim",
             padding=(1, 2),
         )
 

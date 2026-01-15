@@ -1,9 +1,9 @@
 """Main Textual application."""
 
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, TabbedContent, TabPane
+from textual.widgets import Header, Footer, TabbedContent, TabPane
 from textual import events
-from .widgets.agent_panel import ClaudeCodePanel, CodexPanel
+from .widgets.agent_panel import ClaudeCodePanel, CodexPanel, CursorPanel
 from .widgets.antigravity_panel import AntigravityPanel
 
 
@@ -57,10 +57,7 @@ class AgentMonitorApp(App):
                 yield ClaudeCodePanel(id="claude-panel")
                 
             with TabPane("Cursor", id="cursor"):
-                yield Static(
-                    "Cursor monitoring - Coming soon",
-                    classes="info-text",
-                )
+                yield CursorPanel(id="cursor-panel")
                 
             with TabPane("Antigravity", id="antigravity"):
                 yield AntigravityPanel(id="antigravity-panel")
@@ -106,6 +103,12 @@ class AgentMonitorApp(App):
         try:
             antigravity_panel = self.query_one("#antigravity-panel", AntigravityPanel)
             antigravity_panel.refresh_data()
+        except Exception:
+            pass
+
+        try:
+            cursor_panel = self.query_one("#cursor-panel", CursorPanel)
+            cursor_panel.refresh_data()
         except Exception:
             pass
 

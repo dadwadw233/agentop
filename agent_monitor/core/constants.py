@@ -7,7 +7,6 @@ class AgentType(str, Enum):
     """Supported agent types."""
 
     CLAUDE_CODE = "claude_code"
-    CURSOR = "cursor"
     COPILOT = "copilot"
     CODEX = "codex"
 
@@ -21,15 +20,6 @@ AGENT_PATTERNS = {
             r"--model\s+claude-",
         ],
         "min_memory_mb": 50,
-    },
-    AgentType.CURSOR: {
-        "process_names": ["Cursor", "Cursor Helper"],
-        "cmdline_patterns": [
-            r"/Applications/Cursor\.app",
-            r"Cursor Helper \(Renderer\)",
-            r"Cursor Helper \(GPU\)",
-        ],
-        "min_memory_mb": 80,
     },
     AgentType.CODEX: {
         "process_names": ["codex"],
@@ -51,7 +41,6 @@ CLAUDE_PRICING = {
 
 # Default paths
 DEFAULT_CLAUDE_LOGS_DIR = "~/.claude-code/sessions/"
-DEFAULT_CURSOR_LOGS_DIR = "~/Library/Application Support/Cursor/logs/"
 DEFAULT_CODEX_STATS_FILES = [
     "~/.codex/stats.json",
     "~/.codex/usage.json",

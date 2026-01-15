@@ -3,7 +3,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, TabbedContent, TabPane
 from textual import events
-from .widgets.agent_panel import ClaudeCodePanel, CodexPanel, CursorPanel
+from .widgets.agent_panel import ClaudeCodePanel, CodexPanel
 from .widgets.antigravity_panel import AntigravityPanel
 
 
@@ -56,9 +56,6 @@ class AgentMonitorApp(App):
             with TabPane("Claude Code", id="claude"):
                 yield ClaudeCodePanel(id="claude-panel")
                 
-            with TabPane("Cursor", id="cursor"):
-                yield CursorPanel(id="cursor-panel")
-                
             with TabPane("Antigravity", id="antigravity"):
                 yield AntigravityPanel(id="antigravity-panel")
                 
@@ -106,16 +103,10 @@ class AgentMonitorApp(App):
         except Exception:
             pass
 
-        try:
-            cursor_panel = self.query_one("#cursor-panel", CursorPanel)
-            cursor_panel.refresh_data()
-        except Exception:
-            pass
-
     def action_next_tab(self) -> None:
         """Switch to next tab."""
         tabs = self.query_one(TabbedContent)
-        tab_ids = ["claude", "cursor", "antigravity", "codex"]
+        tab_ids = ["claude", "antigravity", "codex"]
         current = tabs.active
         try:
             current_idx = tab_ids.index(current)
@@ -127,7 +118,7 @@ class AgentMonitorApp(App):
     def action_prev_tab(self) -> None:
         """Switch to previous tab."""
         tabs = self.query_one(TabbedContent)
-        tab_ids = ["claude", "cursor", "antigravity", "codex"]
+        tab_ids = ["claude", "antigravity", "codex"]
         current = tabs.active
         try:
             current_idx = tab_ids.index(current)

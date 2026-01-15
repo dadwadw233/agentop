@@ -1,6 +1,6 @@
 # Agent Monitor
 
-A terminal UI tool for monitoring local AI coding agents (Claude Code, Cursor, Copilot, etc.) - like `nvtop` for AI agents.
+A terminal UI tool for monitoring local AI coding agents (Claude Code, Copilot, etc.) - like `nvtop` for AI agents.
 
 ![Agent Monitor](https://img.shields.io/badge/status-MVP%20Complete-success)
 ![Python](https://img.shields.io/badge/python-3.9+-blue)
@@ -20,7 +20,6 @@ A terminal UI tool for monitoring local AI coding agents (Claude Code, Cursor, C
 | Agent | Process Monitor | Usage Stats | Cost Tracking | Status |
 |-------|----------------|-------------|---------------|--------|
 | **Claude Code** | ✅ | ✅ | ✅ | **MVP Complete** |
-| **Cursor** | ✅ | ⚠️ | ⚠️ | Dashboard usage (unstable) |
 | **GitHub Copilot** | ⏳ | ⏳ | ⏳ | Planned |
 | **OpenAI Codex** | ✅ | ⏳ | ⏳ | Process monitoring + local logs (beta) |
 
@@ -111,40 +110,8 @@ Agent Monitor reads from:
 - **Usage stats**: `~/.claude/stats-cache.json` (updated by Claude Code)
 - **Pricing**: Built-in Claude pricing table
 - **Codex quota (beta)**: `/usage` API via Codex auth (`~/.codex/auth.json`)
-- **Cursor usage (unstable)**: private dashboard API using `CURSOR_DASHBOARD_COOKIE` (subject to change)
 
 **Note**: Today's usage may show as $0 if `stats-cache.json` hasn't been updated yet (last update: check file date).
-
-### Cursor dashboard usage (unstable)
-Cursor usage/cost data is fetched from private dashboard endpoints. This requires a valid
-session cookie and may break if Cursor changes their backend.
-
-**Manual setup (do not commit it):**
-
-```bash
-export CURSOR_DASHBOARD_COOKIE="WorkosCursorSessionToken=...; ..."
-```
-
-If your cookie contains quotes or JSON (easy to break in shell), use a file:
-
-```bash
-cat > /tmp/cursor_cookie.txt <<'EOF'
-cursor_anonymous_id=...; WorkosCursorSessionToken=...; ...; GCLB="..."
-EOF
-export CURSOR_DASHBOARD_COOKIE_FILE=/tmp/cursor_cookie.txt
-```
-
-If the dashboard returns empty usage with a valid cookie (rare), you can allow zeros:
-
-```bash
-export CURSOR_ALLOW_ZERO_USAGE=1
-```
-
-If the invoice or usage endpoint returns `{}`, set the start date from the dashboard request:
-
-```bash
-export CURSOR_USAGE_START_MS=1767763069000
-```
 
 ## Architecture
 
@@ -184,13 +151,12 @@ ruff check agent_monitor/
 ## Roadmap
 
 ### ✅ Phase 1: MVP (COMPLETE)
-- [x] Process monitoring (Claude Code, Cursor)
+- [x] Process monitoring (Claude Code)
 - [x] Stats parsing (`stats-cache.json`)
 - [x] Token usage & cost tracking
 - [x] Real-time TUI
 
 ### 🚧 Phase 2: Multi-Agent (Next)
-- [x] Cursor usage stats (dashboard API, unstable)
 - [ ] Copilot monitoring
 - [ ] Configuration system (YAML)
 - [ ] Multiple panels in TUI
@@ -248,7 +214,7 @@ pip install -e .
 
 Contributions welcome! Areas of interest:
 
-1. **New agents**: Cursor, Copilot, Codex monitoring
+1. **New agents**: Copilot, Codex monitoring
 2. **Cross-platform**: Windows/Linux testing
 3. **UI enhancements**: Charts, themes, layouts
 4. **Documentation**: Tutorials, examples

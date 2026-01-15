@@ -4,7 +4,7 @@
 
 ✅ **已实现的功能**：
 
-- 🔍 **进程监控**：检测并监控本地运行的 AI agent 进程（Claude Code、Cursor）
+- 🔍 **进程监控**：检测并监控本地运行的 AI agent 进程（Claude Code）
 - 📊 **资源追踪**：实时显示 CPU、内存使用情况
 - 📝 **日志解析**：解析 Claude Code 的 JSONL 会话日志
 - 💰 **使用统计**：Token 使用量、费用估算（今日/本月）
@@ -46,10 +46,6 @@ python3 test_mvp.py
 在你的系统上测试成功：
 
 ```
-[Cursor Processes]
-  ✓ Found 3 Cursor processes
-  Total CPU: 0.0%  Total Memory: 1071 MB
-
 [Claude Code Monitor]
   Active: False (当前没有运行的 Claude Code 进程)
   Sessions today: 0
@@ -62,7 +58,6 @@ python3 test_mvp.py
 | Agent | 进程监控 | 日志解析 | API 集成 | 状态 |
 |-------|----------|----------|----------|------|
 | **Claude Code** | ✅ | ✅ | ⏳ | MVP 完成 |
-| **Cursor** | ✅ | ⏳ | ⏳ | 进程监控完成 |
 | **GitHub Copilot** | ⏳ | ⏳ | ⏳ | 计划中 |
 | **OpenAI Codex** | ✅ | ⏳ | ⏳ | 进程监控 + 本地日志（beta） |
 
@@ -104,12 +99,6 @@ python3 test_mvp.py
   - 会话数量（活跃/总数）
   - 费用估算（基于 Claude 定价）
 
-### Cursor
-- **进程检测**：`/Applications/Cursor.app`
-- **子进程**：Main、GPU、Renderer、Plugin
-- **监控指标**：
-  - 多进程 CPU/内存聚合
-  - 工作区数量（待实现）
 
 ## 项目结构
 
@@ -139,7 +128,6 @@ agent-monitor/
 ## 下一步计划
 
 ### Phase 2（未来功能）
-- [ ] Cursor 日志解析
 - [ ] Copilot 监控支持
 - [ ] 配置文件系统（YAML）
 - [ ] 历史数据存储（SQLite）

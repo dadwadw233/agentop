@@ -1,6 +1,6 @@
 """UI widgets."""
 
-from .agent_panel import ClaudeCodePanel, CodexPanel, CursorPanel
+from .agent_panel import ClaudeCodePanel, CodexPanel
 from .antigravity_panel import AntigravityPanel
 
-__all__ = ["ClaudeCodePanel", "CodexPanel", "CursorPanel", "AntigravityPanel"]
+__all__ = ["ClaudeCodePanel", "CodexPanel", "AntigravityPanel"]

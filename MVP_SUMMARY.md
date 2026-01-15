@@ -25,11 +25,7 @@ Agent Monitor 的第一个可运行版本（MVP）已成功实现并测试通过
   - 今日总会话数
   - 会话时间追踪
 
-### 3. Cursor 监控
-- ✅ **多进程识别**：Main、GPU、Renderer、Plugin 等子进程
-- ✅ **资源聚合**：自动汇总所有子进程的 CPU/内存使用
-
-### 4. 技术实现
+### 3. 技术实现
 - ✅ **模块化架构**：清晰的分层设计（core/monitors/parsers/ui）
 - ✅ **数据模型**：完整的 Pydantic 数据模型
 - ✅ **跨平台支持**：基于 psutil，支持 macOS/Linux/Windows
@@ -44,10 +40,6 @@ Agent Monitor 的第一个可运行版本（MVP）已成功实现并测试通过
   ✓ PID 54430: 2.1.6
     CPU: 0.0%  Memory: 562 MB
     Status: running  Uptime: 7765s
-
-[Cursor Processes]
-  ✓ Found 5 Cursor processes
-  Total CPU: 0.0%  Total Memory: 1302 MB
 
 [Claude Code Monitor]
   Active: True
@@ -149,7 +141,6 @@ CLAUDE_PRICING = {
 ## 📈 下一步计划
 
 ### Phase 2：多 Agent 支持（预计 1-2 周）
-- [ ] Cursor 日志解析和使用统计
 - [ ] GitHub Copilot 监控
 - [ ] OpenAI Codex 监控
 - [ ] 配置文件系统（`agents.yaml`）

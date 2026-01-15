@@ -2,7 +2,6 @@
 
 ## 项目概述
 
-Agent Monitor 是一个类似 nvtop 的终端 UI 工具，用于实时监控本地运行的 AI coding agent 工具（Claude Code、Cursor、Copilot、Codex 等）的进程状态和资源使用情况。
 
 ## 核心目标
 
@@ -59,7 +58,6 @@ agent-monitor/
 │   │   ├── base.py             # 基础监控类
 │   │   ├── process.py          # 进程监控
 │   │   ├── claude_code.py      # Claude Code 专用
-│   │   ├── cursor.py           # Cursor 专用
 │   │   ├── copilot.py          # GitHub Copilot
 │   │   └── codex.py            # OpenAI Codex
 │   │
@@ -67,7 +65,6 @@ agent-monitor/
 │   │   ├── __init__.py
 │   │   ├── base.py
 │   │   ├── claude_logs.py      # Claude Code JSONL
-│   │   └── cursor_logs.py      # Cursor 日志
 │   │
 │   ├── api/                     # API 客户端
 │   │   ├── __init__.py
@@ -122,11 +119,7 @@ AGENT_PATTERNS = {
         ],
         'min_memory_mb': 50,  # 最小内存阈值
     },
-    'cursor': {
-        'process_names': ['Cursor', 'Cursor Helper'],
         'cmdline_patterns': [
-            r'/Applications/Cursor\.app',
-            r'Cursor Helper \(Renderer\)',
         ],
         'min_memory_mb': 100,
     },
@@ -193,24 +186,16 @@ class ClaudeCodeMetrics:
     last_active: datetime
 ```
 
-### 3. Cursor 监控器（monitors/cursor.py）
 
 **检测策略**
 ```python
-# Cursor 有多个子进程
 CURSOR_PROCESS_TYPES = {
-    'main': r'/Applications/Cursor\.app/Contents/MacOS/Cursor$',
-    'gpu': r'Cursor Helper \(GPU\)',
-    'renderer': r'Cursor Helper \(Renderer\)',
-    'plugin': r'Cursor Helper \(Plugin\)',
-    'shared': r'Cursor Helper: shared-process',
 }
 ```
 
 **监控内容**
 ```python
 @dataclass
-class CursorMetrics:
     # 进程组
     main_process: Optional[ProcessMetrics]
     helper_processes: List[ProcessMetrics]
@@ -322,7 +307,6 @@ class AgentMonitorApp(App):
         yield Header()
         yield Container(
             ClaudeCodePanel(id="claude"),
-            CursorPanel(id="cursor"),
             TimelineWidget(id="timeline"),
         )
         yield Footer()
@@ -333,7 +317,6 @@ class AgentMonitorApp(App):
     async def refresh_data(self) -> None:
         # 更新所有监控数据
         await self.query_one("#claude").update()
-        await self.query_one("#cursor").update()
 ```
 
 ## 配置系统
@@ -381,19 +364,14 @@ agents:
       token_threshold: 0.9  # 90% 告警
       cost_daily_limit: 10.0  # USD
 
-  cursor:
     enabled: true
-    display_name: "Cursor"
     icon: "💡"
 
     process:
-      names: ["Cursor", "Cursor Helper"]
       cmdline_patterns:
-        - "/Applications/Cursor\\.app"
       group_by_type: true  # 分组显示子进程
 
     monitoring:
-      track_tokens: false  # Cursor 没有直接 token 信息
       track_workspaces: true
 ```
 
@@ -469,7 +447,6 @@ CREATE TABLE alerts (
 **目标输出**：可以监控 Claude Code 进程和基本 token 使用
 
 ### Phase 2: 多 Agent 支持 (1-2 周)
-- [ ] Cursor 监控
 - [ ] Copilot 监控（如果需要）
 - [ ] 配置系统（YAML）
 - [ ] 进程分组显示
@@ -510,7 +487,6 @@ agent-monitor
 agent-monitor --config ~/.agent-monitor/config.yaml
 
 # 仅监控特定 agent
-agent-monitor --agents claude_code,cursor
 
 # 紧凑模式
 agent-monitor --compact

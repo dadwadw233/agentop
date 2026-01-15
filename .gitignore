@@ -54,3 +54,5 @@ CLAUDE_CODE_TRACKING_ANALYSIS.md
 # OS
 .DS_Store
 Thumbs.db
+
+pypi-token.txt

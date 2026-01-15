@@ -28,7 +28,7 @@ class AgentMonitorApp(App):
     }
 
     #antigravity, #antigravity-panel {
-        overflow-y: auto;
+        overflow: hidden;
         scrollbar-size: 0 0;
     }
 
@@ -78,6 +78,12 @@ class AgentMonitorApp(App):
         elif event.key == "shift+tab":
             event.prevent_default()
             self.action_prev_tab()
+        elif event.key == "[":
+            event.prevent_default()
+            self.action_prev_antigravity_page()
+        elif event.key == "]":
+            event.prevent_default()
+            self.action_next_antigravity_page()
 
     def action_quit(self) -> None:
         """Quit the application."""
@@ -126,6 +132,28 @@ class AgentMonitorApp(App):
             tabs.active = tab_ids[prev_idx]
         except Exception:
             tabs.active = "claude"
+
+    def action_next_antigravity_page(self) -> None:
+        """Advance Antigravity model page when that tab is active."""
+        tabs = self.query_one(TabbedContent)
+        if tabs.active != "antigravity":
+            return
+        try:
+            panel = self.query_one("#antigravity-panel", AntigravityPanel)
+            panel.next_page()
+        except Exception:
+            pass
+
+    def action_prev_antigravity_page(self) -> None:
+        """Go to previous Antigravity model page when that tab is active."""
+        tabs = self.query_one(TabbedContent)
+        if tabs.active != "antigravity":
+            return
+        try:
+            panel = self.query_one("#antigravity-panel", AntigravityPanel)
+            panel.prev_page()
+        except Exception:
+            pass
 
 
 def main():

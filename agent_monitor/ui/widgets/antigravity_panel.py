@@ -3,6 +3,7 @@
 from textual.widgets import Static
 from rich.panel import Panel
 from datetime import datetime
+import math
 
 from ...monitors.antigravity import AntigravityMonitor
 
@@ -14,16 +15,31 @@ class AntigravityPanel(Static):
         """Initialize panel."""
         super().__init__(**kwargs)
         self.monitor = AntigravityMonitor()
+        self.page_index = 0
+        self.page_size = 6
+        self._effective_page_size = self.page_size
 
     def on_mount(self) -> None:
         """Set up periodic refresh."""
         self.set_interval(5.0, self.refresh_data)  # 5 second refresh
+        self._update_page_size()
         self.refresh_data()
 
     def refresh_data(self) -> None:
         """Refresh the display with current metrics."""
+        self._update_page_size()
         metrics = self.monitor.get_metrics()
         self.update(self._render_metrics(metrics))
+
+    def next_page(self) -> None:
+        """Move to the next model page."""
+        self.page_index += 1
+        self.refresh_data()
+
+    def prev_page(self) -> None:
+        """Move to the previous model page."""
+        self.page_index = max(0, self.page_index - 1)
+        self.refresh_data()
 
     def _render_metrics(self, metrics) -> Panel:
         """
@@ -87,8 +103,19 @@ class AntigravityPanel(Static):
         if metrics.models:
             content_parts.append("[b]Model Quotas:[/b]")
             content_parts.append("")
-            
-            for model in metrics.models:
+
+            models = sorted(
+                metrics.models,
+                key=lambda model: (model.percentage, model.name.lower()),
+            )
+
+            page_size = max(1, self._effective_page_size)
+            total_pages = max(1, math.ceil(len(models) / page_size))
+            self.page_index = min(self.page_index, total_pages - 1)
+            start = self.page_index * page_size
+            page_models = models[start : start + page_size]
+
+            for model in page_models:
                 # Shorten model name for display
                 display_name = model.name.split('/')[-1] if '/' in model.name else model.name
                 
@@ -115,6 +142,11 @@ class AntigravityPanel(Static):
                         content_parts.append(f"    [dim]Resets: {model.reset_time[:16]}[/dim]")
                 
                 content_parts.append("")
+
+            if total_pages > 1:
+                content_parts.append(
+                    f"[dim]Page {self.page_index + 1}/{total_pages} • Use [ and ] to navigate[/dim]"
+                )
         else:
             content_parts.append("[dim]No model quota data available[/dim]")
             content_parts.append("")
@@ -160,3 +192,16 @@ class AntigravityPanel(Static):
         if reset_dt.tzinfo is not None:
             reset_dt = reset_dt.astimezone().replace(tzinfo=None)
         return reset_dt.strftime("%H:%M")
+
+    def _update_page_size(self) -> None:
+        """Compute a stable page size from screen height."""
+        app = getattr(self, "app", None)
+        height = getattr(getattr(app, "size", None), "height", 0) or 0
+        if height <= 0:
+            return
+
+        overhead_lines = 12  # header/footer + panel padding + headings
+        available = max(0, height - overhead_lines)
+        per_model = 4
+        max_models = max(3, available // per_model)
+        self._effective_page_size = min(self.page_size, max_models)

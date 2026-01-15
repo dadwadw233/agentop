@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentop"
-version = "0.1.0"
+version = "0.1.1"
 description = "A terminal UI tool for monitoring local AI coding agents (Claude Code, etc.)"
 readme = "README.md"
 requires-python = ">=3.9"

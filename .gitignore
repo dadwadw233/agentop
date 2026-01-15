@@ -43,6 +43,13 @@ htmlcov/
 *.db
 *.log
 3rd/
+.claude/
+PROJECT_PLAN.md
+MVP_SUMMARY.md
+QUICKSTART.md
+QUOTA_REMOVAL_SUMMARY.md
+TUI_COMPLETE.md
+CLAUDE_CODE_TRACKING_ANALYSIS.md
 
 # OS
 .DS_Store

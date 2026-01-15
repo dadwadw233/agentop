@@ -29,16 +29,9 @@ A terminal UI tool for monitoring local AI coding agents — like `nvtop`/`htop`
 pip install agentop
 ```
 
-### pipx
-```bash
-pipx install agentop
-```
-
 ### From source
 ```bash
-git clone https://github.com/dadwadw233/agentop.git
-cd agentop
-pip install -e .
+pip install git+https://github.com/dadwadw233/agentop.git
 ```
 
 ## Quick Start

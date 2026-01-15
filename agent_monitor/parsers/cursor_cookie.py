@@ -1,6 +1,6 @@
 """Cursor cookie extraction helpers (macOS-focused).
 
-Attempts to auto-detect Cursor session cookies from the Cursor app or browsers.
+Attempts to auto-detect Cursor session cookies from browsers.
 Falls back to CURSOR_DASHBOARD_COOKIE env var when provided.
 """
 
@@ -8,9 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
-import sqlite3
 import time
-from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -45,10 +43,6 @@ class CursorCookieProvider:
                 return [self._cached_cookie]
 
         candidates = []
-        app_cookie = self._load_from_cursor_app()
-        if app_cookie:
-            candidates.append(app_cookie)
-
         browser_cookies = self._load_from_browsers_all()
         candidates.extend(browser_cookies)
 
@@ -72,26 +66,6 @@ class CursorCookieProvider:
         self._cached_at = time.time()
         self.last_error = None
         return unique
-
-    def _load_from_cursor_app(self) -> Optional[str]:
-        """Try to read Cursor app cookie database (plaintext values only)."""
-        candidates = [
-            Path.home() / "Library" / "Application Support" / "Cursor" / "Cookies",
-            Path.home()
-            / "Library"
-            / "Application Support"
-            / "Cursor"
-            / "Default"
-            / "Cookies",
-        ]
-        for path in candidates:
-            if not path.exists():
-                continue
-            cookies = self._read_cookie_db(path)
-            cookie_header = self._cookie_header_from_map(cookies)
-            if cookie_header:
-                return cookie_header
-        return None
 
     def _load_from_browsers_all(self) -> list[str]:
         """Try to read cursor.com cookies from supported browsers."""
@@ -135,22 +109,6 @@ class CursorCookieProvider:
         if not cookies_found:
             self.last_error = "no browser cookies found"
         return cookies_found
-
-    def _read_cookie_db(self, path: Path) -> dict[str, str]:
-        cookies: dict[str, str] = {}
-        try:
-            conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT name, value FROM cookies WHERE host_key LIKE '%cursor.com'"
-            )
-            for name, value in cursor.fetchall():
-                if value:
-                    cookies[name] = value
-            conn.close()
-        except Exception:
-            return {}
-        return cookies
 
     def _cookie_header_from_map(self, cookies: dict[str, str]) -> Optional[str]:
         if not cookies:

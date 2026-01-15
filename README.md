@@ -121,7 +121,7 @@ session cookie and may break if Cursor changes their backend.
 
 **Auto cookie detection (macOS):**
 - If available, Agent Monitor will try to read Cursor web cookies from your local
-  browser or the Cursor app itself.
+  browser.
 - Install the optional dependency:
 
 ```bash

@@ -35,12 +35,6 @@ agent-monitor
 python3 -m agent_monitor
 ```
 
-### 方式 3：测试脚本
-```bash
-# 运行非交互式测试（查看监控数据输出）
-python3 test_mvp.py
-```
-
 ## 测试结果
 
 在你的系统上测试成功：
@@ -58,8 +52,9 @@ python3 test_mvp.py
 | Agent | 进程监控 | 日志解析 | API 集成 | 状态 |
 |-------|----------|----------|----------|------|
 | **Claude Code** | ✅ | ✅ | ⏳ | MVP 完成 |
+| **Antigravity** | ⏳ | ✅ | ⏳ | quota（beta） |
+| **OpenAI Codex** | ✅ | ⏳ | ⏳ | 进程监控 + quota（beta） |
 | **GitHub Copilot** | ⏳ | ⏳ | ⏳ | 计划中 |
-| **OpenAI Codex** | ✅ | ⏳ | ⏳ | 进程监控 + 本地日志（beta） |
 
 ## TUI 界面预览
 
@@ -99,6 +94,16 @@ python3 test_mvp.py
   - 会话数量（活跃/总数）
   - 费用估算（基于 Claude 定价）
 
+### Codex
+- **进程检测**：`codex`
+- **监控指标**：
+  - 进程 CPU/内存
+  - Quota（API，beta）
+
+### Antigravity
+- **监控指标**：
+  - Quota（API，beta，需要登录）
+
 
 ## 项目结构
 
@@ -120,7 +125,6 @@ agent-monitor/
 │       ├── app.py         # 主应用
 │       └── widgets/       # UI 组件
 │
-├── test_mvp.py            # 测试脚本
 ├── pyproject.toml         # 项目配置
 └── PROJECT_PLAN.md        # 完整方案
 ```
@@ -174,7 +178,7 @@ ls -lt ~/.claude-code/sessions/*.jsonl | head -5
 
 欢迎贡献！主要需求：
 
-1. **新 Agent 支持**：添加 Copilot、Codex 等监控
+1. **新 Agent 支持**：添加 Copilot 等监控
 2. **跨平台测试**：Linux、Windows 测试
 3. **UI 增强**：更多可视化组件
 4. **文档**：使用教程、API 文档

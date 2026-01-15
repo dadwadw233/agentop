@@ -216,7 +216,7 @@ agent-monitor
 python3 show_stats.py
 
 # 快速测试
-python3 test_mvp.py
+python3 show_stats.py
 ```
 
 ### 费用控制

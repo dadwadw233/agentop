@@ -13,17 +13,38 @@ A terminal UI tool for monitoring local AI coding agents (Claude Code, Copilot, 
 ✅ **Cost Estimation**: Automatic cost calculation based on Claude pricing
 ✅ **Session Management**: View active sessions and usage statistics
 ✅ **Beautiful TUI**: Terminal UI with live updates (1-second refresh)
-✅ **Local-First**: Works entirely from local data, no API required
+✅ **Local-First**: Uses local data where possible, with optional API calls for quota/status
+✅ **Quota Panels (Beta)**: Codex + Antigravity quota snapshots
 
 ## Supported Agents
 
 | Agent | Process Monitor | Usage Stats | Cost Tracking | Status |
 |-------|----------------|-------------|---------------|--------|
 | **Claude Code** | ✅ | ✅ | ✅ | **MVP Complete** |
+| **Antigravity** | ⏳ | ✅ | ⏳ | Quota via API (beta) |
+| **OpenAI Codex** | ✅ | ⏳ | ⏳ | Process monitoring + quota (beta) |
 | **GitHub Copilot** | ⏳ | ⏳ | ⏳ | Planned |
-| **OpenAI Codex** | ✅ | ⏳ | ⏳ | Process monitoring + local logs (beta) |
 
-## Installation
+## Supported Platforms
+
+- macOS (tested)
+- Linux (tested)
+
+## Installation (macOS / Linux)
+
+### Fast install (pipx)
+```bash
+# If you already have pipx:
+pipx install git+https://github.com/<YOUR_ORG>/agent-monitor.git
+```
+
+### From source
+```bash
+# Clone and install
+git clone https://github.com/<YOUR_ORG>/agent-monitor.git
+cd agent-monitor
+pip install -e .
+```
 
 ```bash
 # Clone or navigate to the project
@@ -85,12 +106,6 @@ Output shows:
 - Breakdown by model (Sonnet/Haiku/Opus)
 - Total costs and token counts
 
-### 3. Quick Test
-```bash
-# Run non-interactive test
-python3 test_mvp.py
-```
-
 ## What You'll See
 
 ### Real Data from Your System
@@ -110,6 +125,7 @@ Agent Monitor reads from:
 - **Usage stats**: `~/.claude/stats-cache.json` (updated by Claude Code)
 - **Pricing**: Built-in Claude pricing table
 - **Codex quota (beta)**: `/usage` API via Codex auth (`~/.codex/auth.json`)
+- **Antigravity quota (beta)**: Google Cloud Code API via Antigravity auth (local state db)
 
 **Note**: Today's usage may show as $0 if `stats-cache.json` hasn't been updated yet (last update: check file date).
 
@@ -122,7 +138,6 @@ agent-monitor/
 │   ├── monitors/          # Process & usage monitoring
 │   ├── parsers/           # Stats file parsing
 │   └── ui/                # Textual TUI
-├── test_mvp.py           # Quick test
 ├── show_stats.py         # Detailed stats
 └── run_tui.sh            # TUI launcher
 ```
@@ -179,7 +194,8 @@ ruff check agent_monitor/
 2. **Today's Data**: May show $0 if stats file is stale
 3. **Token Estimation**: Input/output split is estimated (70/30 ratio) for daily data
 4. **Active Sessions**: Based on running processes, not session file timestamps
-5. **No Quota Tracking**: Claude's API doesn't expose quota information
+5. **Antigravity Quota**: Requires Antigravity login and may be unavailable for some accounts
+6. **Codex Usage**: Codex CLI does not store local usage; only quota is shown
 
 ## Troubleshooting
 
@@ -188,8 +204,8 @@ ruff check agent_monitor/
 # Check if Claude Code is running
 ps aux | grep claude
 
-# Verify process detection
-python3 test_mvp.py
+# Verify basic stats
+python3 show_stats.py
 ```
 
 ### No usage data

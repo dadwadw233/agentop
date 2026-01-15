@@ -69,8 +69,8 @@ agent-monitor
 # 方式 2：Python 模块
 python3 -m agent_monitor
 
-# 方式 3：测试脚本（查看数据输出）
-python3 test_mvp.py
+# 方式 3：统计脚本（查看数据输出）
+python3 show_stats.py
 ```
 
 ## 📂 项目结构
@@ -96,7 +96,7 @@ agent-monitor/
 │
 ├── config/                  # 配置目录（待实现）
 ├── tests/                   # 单元测试（待实现）
-├── test_mvp.py             # MVP 测试脚本
+├── show_stats.py           # 统计脚本
 ├── pyproject.toml          # 项目配置
 ├── PROJECT_PLAN.md         # 完整实现计划
 ├── QUICKSTART.md           # 快速入门指南
@@ -190,7 +190,7 @@ agent-monitor
 
 ### 检查当前状态
 ```bash
-python3 test_mvp.py
+python3 show_stats.py
 ```
 
 ### 编程接口

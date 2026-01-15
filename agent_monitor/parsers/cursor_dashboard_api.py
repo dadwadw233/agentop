@@ -1,7 +1,7 @@
 """Cursor dashboard API client.
 
 Uses private Cursor dashboard endpoints to fetch billing usage.
-Authentication is provided via CURSOR_DASHBOARD_COOKIE env var.
+Authentication uses CURSOR_DASHBOARD_COOKIE or auto cookie detection.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ import logging
 import httpx
 
 from ..core.models import CursorUsageAggregate
+from .cursor_cookie import CursorCookieProvider
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ class CursorDashboardClient:
         self._cached_snapshot: Optional[CursorUsageSnapshot] = None
         self._cached_at: Optional[float] = None
         self.last_error: Optional[str] = None
+        self.cookie_provider = CursorCookieProvider()
 
     def get_usage_snapshot(self) -> Optional[CursorUsageSnapshot]:
         """Fetch usage snapshot for current billing period."""
@@ -63,9 +65,9 @@ class CursorDashboardClient:
             if age < self.cache_ttl_seconds:
                 return self._cached_snapshot
 
-        cookie = os.getenv("CURSOR_DASHBOARD_COOKIE")
+        cookie = self.cookie_provider.get_cookie()
         if not cookie:
-            self.last_error = "CURSOR_DASHBOARD_COOKIE not set"
+            self.last_error = self.cookie_provider.last_error
             return None
 
         now_ms = int(time.time() * 1000)

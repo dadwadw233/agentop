@@ -6,6 +6,7 @@ from .codex_stats import CodexStatsParser
 from .codex_rate_limits import CodexRateLimitClient
 from .claude_rate_limits import ClaudeRateLimitClient
 from .cursor_dashboard_api import CursorDashboardClient
+from .cursor_cookie import CursorCookieProvider
 
 __all__ = [
     "ClaudeLogParser",
@@ -14,4 +15,5 @@ __all__ = [
     "CodexRateLimitClient",
     "ClaudeRateLimitClient",
     "CursorDashboardClient",
+    "CursorCookieProvider",
 ]

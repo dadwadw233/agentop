@@ -27,6 +27,11 @@ class AgentMonitorApp(App):
         margin-bottom: 1;
     }
 
+    #antigravity, #antigravity-panel {
+        overflow-y: auto;
+        scrollbar-size: 0 0;
+    }
+
     .info-text {
         margin-top: 1;
         color: $text-muted;

@@ -78,10 +78,10 @@ class AgentMonitorApp(App):
         elif event.key == "shift+tab":
             event.prevent_default()
             self.action_prev_tab()
-        elif event.key == "[":
+        elif event.character == "[" or event.key in ("left_bracket", "left_square_bracket"):
             event.prevent_default()
             self.action_prev_antigravity_page()
-        elif event.key == "]":
+        elif event.character == "]" or event.key in ("right_bracket", "right_square_bracket"):
             event.prevent_default()
             self.action_next_antigravity_page()
 

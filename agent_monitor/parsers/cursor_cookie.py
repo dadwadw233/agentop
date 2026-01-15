@@ -27,31 +27,51 @@ class CursorCookieProvider:
 
     def get_cookie(self) -> Optional[str]:
         """Return cookie header string for cursor.com, if available."""
+        candidates = self.get_candidate_cookies()
+        if not candidates:
+            return None
+        return candidates[0]
+
+    def get_candidate_cookies(self) -> list[str]:
+        """Return a list of candidate cookie headers in priority order."""
         env_cookie = os.getenv("CURSOR_DASHBOARD_COOKIE")
         if env_cookie:
             self.last_error = None
-            return env_cookie
+            return [env_cookie]
 
         if self._cached_cookie and self._cached_at:
             age = time.time() - self._cached_at
             if age < self.cache_ttl_seconds:
-                return self._cached_cookie
+                return [self._cached_cookie]
 
-        cookie = self._load_from_cursor_app()
-        if not cookie:
-            cookie = self._load_from_browsers()
+        candidates = []
+        app_cookie = self._load_from_cursor_app()
+        if app_cookie:
+            candidates.append(app_cookie)
 
-        if not cookie:
+        browser_cookies = self._load_from_browsers_all()
+        candidates.extend(browser_cookies)
+
+        # De-duplicate while preserving order
+        seen = set()
+        unique = []
+        for cookie in candidates:
+            if cookie in seen:
+                continue
+            seen.add(cookie)
+            unique.append(cookie)
+
+        if not unique:
             hint = self.last_error or "no cursor.com cookie found"
             self.last_error = (
                 f"{hint}; set CURSOR_DASHBOARD_COOKIE or install browser-cookie3"
             )
-            return None
+            return []
 
-        self._cached_cookie = cookie
+        self._cached_cookie = unique[0]
         self._cached_at = time.time()
         self.last_error = None
-        return cookie
+        return unique
 
     def _load_from_cursor_app(self) -> Optional[str]:
         """Try to read Cursor app cookie database (plaintext values only)."""
@@ -73,21 +93,36 @@ class CursorCookieProvider:
                 return cookie_header
         return None
 
-    def _load_from_browsers(self) -> Optional[str]:
+    def _load_from_browsers_all(self) -> list[str]:
         """Try to read cursor.com cookies from supported browsers."""
         try:
             import browser_cookie3
         except Exception:
             self.last_error = "browser-cookie3 not installed"
-            return None
+            return []
 
-        jars = []
-        try:
-            jars.append(browser_cookie3.load(domain_name="cursor.com"))
-        except Exception:
-            pass
+        loaders = []
+        for name in ("chrome", "chromium", "edge", "safari", "firefox"):
+            loader = getattr(browser_cookie3, name, None)
+            if loader:
+                loaders.append((name, loader))
 
-        for jar in jars:
+        cookies_found: list[str] = []
+        for _, loader in loaders:
+            jar = None
+            try:
+                jar = loader(domain_name="cursor.com")
+            except TypeError:
+                try:
+                    jar = loader()
+                except Exception:
+                    jar = None
+            except Exception:
+                jar = None
+
+            if not jar:
+                continue
+
             cookies = {}
             for cookie in jar:
                 if "cursor.com" not in cookie.domain:
@@ -95,8 +130,11 @@ class CursorCookieProvider:
                 cookies[cookie.name] = cookie.value
             header = self._cookie_header_from_map(cookies)
             if header:
-                return header
-        return None
+                cookies_found.append(header)
+
+        if not cookies_found:
+            self.last_error = "no browser cookies found"
+        return cookies_found
 
     def _read_cookie_db(self, path: Path) -> dict[str, str]:
         cookies: dict[str, str] = {}

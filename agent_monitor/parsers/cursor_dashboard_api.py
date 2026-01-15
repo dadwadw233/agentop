@@ -65,22 +65,51 @@ class CursorDashboardClient:
             if age < self.cache_ttl_seconds:
                 return self._cached_snapshot
 
-        cookie = self.cookie_provider.get_cookie()
-        if not cookie:
+        env_cookie = os.getenv("CURSOR_DASHBOARD_COOKIE")
+        cookies = self.cookie_provider.get_candidate_cookies()
+        if not cookies:
             self.last_error = self.cookie_provider.last_error
             return None
 
         now_ms = int(time.time() * 1000)
-        period = self._fetch_monthly_invoice(cookie, now_ms)
-        if not period:
+        last_snapshot = None
+
+        for cookie in cookies:
+            period = self._fetch_monthly_invoice(cookie, now_ms)
+            if not period:
+                continue
+
+            period_start_ms, period_end_ms = period
+            snapshot = self._fetch_usage(cookie, period_start_ms, period_end_ms)
+            if not snapshot:
+                continue
+
+            last_snapshot = snapshot
+            if env_cookie:
+                break
+
+            if self._snapshot_has_usage(snapshot):
+                break
+
+        if not last_snapshot:
             return None
 
-        period_start_ms, period_end_ms = period
-        snapshot = self._fetch_usage(cookie, period_start_ms, period_end_ms)
-        if snapshot:
-            self._cached_snapshot = snapshot
-            self._cached_at = time.time()
-        return snapshot
+        if not env_cookie and not self._snapshot_has_usage(last_snapshot):
+            self.last_error = (
+                "auto cookie returned empty usage; set CURSOR_DASHBOARD_COOKIE"
+            )
+            return None
+
+        self._cached_snapshot = last_snapshot
+        self._cached_at = time.time()
+        return last_snapshot
+
+    def _snapshot_has_usage(self, snapshot: CursorUsageSnapshot) -> bool:
+        return (
+            snapshot.total_tokens > 0
+            or snapshot.total_cost_cents > 0
+            or bool(snapshot.aggregations)
+        )
 
     def _fetch_monthly_invoice(self, cookie: str, now_ms: int) -> Optional[tuple[int, int]]:
         payload = {

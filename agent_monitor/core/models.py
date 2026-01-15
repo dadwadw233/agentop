@@ -171,6 +171,68 @@ class CodexMetrics(AgentMetrics):
 
 
 @dataclass
+class CursorUsageAggregate:
+    """Usage aggregation for a Cursor model intent."""
+
+    model_intent: str
+    input_tokens: int
+    output_tokens: int
+    cache_write_tokens: int
+    cache_read_tokens: int
+    total_cents: float
+    tier: Optional[int] = None
+
+    @property
+    def total_tokens(self) -> int:
+        return (
+            self.input_tokens
+            + self.output_tokens
+            + self.cache_write_tokens
+            + self.cache_read_tokens
+        )
+
+
+@dataclass
+class CursorMetrics(AgentMetrics):
+    """Metrics specific to Cursor."""
+
+    agent_type: str = "cursor"
+
+    # Session info
+    active_sessions: int = 0
+
+    # Billing period (from dashboard)
+    billing_period_start: Optional[datetime] = None
+    billing_period_end: Optional[datetime] = None
+
+    # Token usage totals
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_cache_write_tokens: int = 0
+    total_cache_read_tokens: int = 0
+
+    # Cost (from dashboard)
+    total_cost: CostEstimate = field(default_factory=lambda: CostEstimate(0.0))
+
+    # Per-model aggregates
+    aggregations: List[CursorUsageAggregate] = field(default_factory=list)
+
+    # Usage metadata
+    usage_source: Optional[str] = None
+    usage_error: Optional[str] = None
+    stats_last_updated: Optional[datetime] = None
+
+    @property
+    def total_tokens(self) -> int:
+        return (
+            self.total_input_tokens
+            + self.total_output_tokens
+            + self.total_cache_write_tokens
+            + self.total_cache_read_tokens
+        )
+
+
+@dataclass
 class SessionData:
     """Data from a single Claude Code session."""
 

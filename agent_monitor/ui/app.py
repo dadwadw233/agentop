@@ -1,9 +1,10 @@
 """Main Textual application."""
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, ScrollableContainer
-from textual.widgets import Header, Footer, Static
+from textual.widgets import Header, Footer, Static, TabbedContent, TabPane
+from textual import events
 from .widgets.agent_panel import ClaudeCodePanel, CodexPanel
+from .widgets.antigravity_panel import AntigravityPanel
 
 
 class AgentMonitorApp(App):
@@ -18,12 +19,6 @@ class AgentMonitorApp(App):
         background: $primary;
     }
 
-    #main-container {
-        height: 100%;
-        overflow-y: auto;
-        padding: 1 2;
-    }
-
     ClaudeCodePanel {
         margin-bottom: 1;
     }
@@ -32,7 +27,7 @@ class AgentMonitorApp(App):
         margin-bottom: 1;
     }
 
-    #info-text {
+    .info-text {
         margin-top: 1;
         color: $text-muted;
         text-align: center;
@@ -45,23 +40,39 @@ class AgentMonitorApp(App):
 
     BINDINGS = [
         ("q", "quit", "Quit"),
-        ("r", "refresh", "Refresh Now"),
-        ("d", "toggle_details", "Details"),
+        ("r", "refresh", "Refresh"),
     ]
 
     def compose(self) -> ComposeResult:
         """Create child widgets."""
         yield Header()
-        yield ScrollableContainer(
-            ClaudeCodePanel(id="claude-panel"),
-            CodexPanel(id="codex-panel"),
-            Static(
-                "💡 [dim]Auto-refreshing every second. Press Q to quit, R to refresh now[/dim]",
-                id="info-text",
-            ),
-            id="main-container",
-        )
+        
+        with TabbedContent(initial="claude"):
+            with TabPane("Claude Code", id="claude"):
+                yield ClaudeCodePanel(id="claude-panel")
+                
+            with TabPane("Cursor", id="cursor"):
+                yield Static(
+                    "Cursor monitoring - Coming soon",
+                    classes="info-text",
+                )
+                
+            with TabPane("Antigravity", id="antigravity"):
+                yield AntigravityPanel(id="antigravity-panel")
+                
+            with TabPane("Codex", id="codex"):
+                yield CodexPanel(id="codex-panel")
+        
         yield Footer()
+
+    def on_key(self, event: events.Key) -> None:
+        """Handle key events to enable Tab navigation."""
+        if event.key == "tab":
+            event.prevent_default()
+            self.action_next_tab()
+        elif event.key == "shift+tab":
+            event.prevent_default()
+            self.action_prev_tab()
 
     def action_quit(self) -> None:
         """Quit the application."""
@@ -69,14 +80,47 @@ class AgentMonitorApp(App):
 
     def action_refresh(self) -> None:
         """Manually refresh data."""
-        panel = self.query_one("#claude-panel", ClaudeCodePanel)
-        panel.refresh_data()
-        codex_panel = self.query_one("#codex-panel", CodexPanel)
-        codex_panel.refresh_data()
+        try:
+            panel = self.query_one("#claude-panel", ClaudeCodePanel)
+            panel.refresh_data()
+        except Exception:
+            pass
+            
+        try:
+            codex_panel = self.query_one("#codex-panel", CodexPanel)
+            codex_panel.refresh_data()
+        except Exception:
+            pass
 
-    def action_toggle_details(self) -> None:
-        """Toggle detailed view."""
-        self.notify("Details view coming in Phase 2!")
+        try:
+            antigravity_panel = self.query_one("#antigravity-panel", AntigravityPanel)
+            antigravity_panel.refresh_data()
+        except Exception:
+            pass
+
+    def action_next_tab(self) -> None:
+        """Switch to next tab."""
+        tabs = self.query_one(TabbedContent)
+        tab_ids = ["claude", "cursor", "antigravity", "codex"]
+        current = tabs.active
+        try:
+            current_idx = tab_ids.index(current)
+            next_idx = (current_idx + 1) % len(tab_ids)
+            tabs.active = tab_ids[next_idx]
+        except Exception:
+            tabs.active = "claude"
+
+    def action_prev_tab(self) -> None:
+        """Switch to previous tab."""
+        tabs = self.query_one(TabbedContent)
+        tab_ids = ["claude", "cursor", "antigravity", "codex"]
+        current = tabs.active
+        try:
+            current_idx = tab_ids.index(current)
+            prev_idx = (current_idx - 1) % len(tab_ids)
+            tabs.active = tab_ids[prev_idx]
+        except Exception:
+            tabs.active = "claude"
 
 
 def main():

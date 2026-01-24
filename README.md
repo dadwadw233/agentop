@@ -69,9 +69,15 @@ python3 show_stats.py
 - Performance optimizations for large datasets
 
 **TUI Improvements:**
-- Enhanced OpenCode panel with better visual hierarchy
-- Added time range indicator in hint text
-- Improved table layouts for all sub-views
+- Redesigned overview dashboard with structured layout (Process Status, Session Stats, Token Usage)
+- Added progress bars for visual token usage comparison
+- Implemented pagination for handling large datasets
+- Dynamic page sizing based on available screen height
+- Enhanced table formatting with better alignment and smart truncation
+- Color gradients for usage intensity (cyan/magenta/blue)
+- Visual status indicators (🟢/⚪) with colored borders
+- Improved hint text with time range display and update timestamps
+- Consistent styling across all sub-views (Sessions, Projects, Models, Agents, Timeline)
 
 ## Roadmap
 

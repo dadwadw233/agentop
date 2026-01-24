@@ -94,6 +94,18 @@ class AgentopApp(App):
         elif event.character == "k":
             event.prevent_default()
             self.action_prev_opencode_view()
+        elif event.character == "t":
+            event.prevent_default()
+            self.action_opencode_time_range("today")
+        elif event.character == "w":
+            event.prevent_default()
+            self.action_opencode_time_range("week")
+        elif event.character == "m":
+            event.prevent_default()
+            self.action_opencode_time_range("month")
+        elif event.character == "a":
+            event.prevent_default()
+            self.action_opencode_time_range("all")
 
     def action_quit(self) -> None:
         """Quit the application."""
@@ -188,6 +200,17 @@ class AgentopApp(App):
         try:
             panel = self.query_one("#opencode-panel", OpenCodePanel)
             panel.prev_view()
+        except Exception:
+            pass
+
+    def action_opencode_time_range(self, time_range: str) -> None:
+        """Set OpenCode time range."""
+        tabs = self.query_one(TabbedContent)
+        if tabs.active != "opencode":
+            return
+        try:
+            panel = self.query_one("#opencode-panel", OpenCodePanel)
+            panel.set_time_range(time_range)
         except Exception:
             pass
 

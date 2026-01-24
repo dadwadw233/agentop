@@ -10,6 +10,7 @@ def test_panel_initializes():
     panel = OpenCodePanel()
     assert panel is not None
     assert panel.monitor is not None
+    assert panel.current_time_range == "all"
 
 
 def test_panel_refresh_data_calls_monitor():
@@ -127,3 +128,27 @@ def test_panel_renders_view_hint():
     renderables = render_group.renderables
     hint = cast(Text, renderables[-1]).plain
     assert "switch views" in hint
+
+
+def test_panel_sets_time_range():
+    """Test that time range can be changed."""
+    from agentop.ui.widgets.opencode_panel import OpenCodePanel
+
+    panel = OpenCodePanel()
+
+    # Test setting different time ranges
+    panel.set_time_range("today")
+    assert panel.current_time_range == "today"
+
+    panel.set_time_range("week")
+    assert panel.current_time_range == "week"
+
+    panel.set_time_range("month")
+    assert panel.current_time_range == "month"
+
+    panel.set_time_range("all")
+    assert panel.current_time_range == "all"
+
+    # Test invalid range is ignored
+    panel.set_time_range("invalid")
+    assert panel.current_time_range == "all"

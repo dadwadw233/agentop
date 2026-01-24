@@ -57,6 +57,22 @@ python3 show_stats.py
 - Antigravity quota: Google Cloud Code API via Antigravity auth (local state db)
 - OpenCode stats: `~/.local/share/opencode/storage/` (message + session directories)
 
+## Changelog
+
+### 0.2.0 (2026-01-25)
+
+**OpenCode Features:**
+- Fixed time filtering bug - now shows all historical data (not just today)
+- Added time range support (Today/Week/Month/All) for all views
+- Implemented lazy loading - only computes aggregates needed for current view
+- Added index cache for faster incremental parsing
+- Performance optimizations for large datasets
+
+**TUI Improvements:**
+- Enhanced OpenCode panel with better visual hierarchy
+- Added time range indicator in hint text
+- Improved table layouts for all sub-views
+
 ## Roadmap
 
 - More agents (TBD)

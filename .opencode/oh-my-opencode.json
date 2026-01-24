@@ -1,0 +1,84 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "google_auth": false,
+  "agents": {
+    // 主编排器（超重度思考）
+    "sisyphus": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    // 高级编排器（超重度思考）
+    "atlas": {
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    // 架构/复杂推理
+    "oracle": {
+      "model": "openai/gpt-5.2-codex"
+    },
+    // 外部资料检索（远程 repo / 官方文档）
+    "librarian": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    // 代码库内部探索/搜索（脏活累活）
+    "explore": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    // 多模态分析（图片 / PDF）
+    "multimodal-looker": {
+      "model": "google/antigravity-gemini-3-flash"
+    },
+    // 规划/拆解（超重度思考）
+    "prometheus": {
+      "model": "anthropic/claude-opus-4-5"
+    },
+    // 规划前分析（超重度思考）
+    "metis": {
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    // 计划审查（超重度思考）
+    "momus": {
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    // 类别派发执行器（尽量用低成本模型）
+    "sisyphus-junior": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    // 前端视觉/设计
+    "frontend-ui-ux-engineer": {
+      "model": "google/antigravity-gemini-3-pro-high"
+    },
+    // 文档与写作
+    "document-writer": {
+      "model": "zai-coding-plan/glm-4.7"
+    }
+  },
+  "categories": {
+    // 前端视觉/设计/动效
+    "visual-engineering": {
+      "model": "google/antigravity-gemini-3-pro-high"
+    },
+    // 超强推理/复杂架构
+    "ultrabrain": {
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    // 创意/艺术生成
+    "artistry": {
+      "model": "google/antigravity-gemini-3-pro-high"
+    },
+    // 简单任务（低成本）
+    "quick": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    // 不明确但轻量
+    "unspecified-low": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    // 不明确但高强度
+    "unspecified-high": {
+      "model": "openai/gpt-5.2-codex"
+    },
+    // 文档/写作
+    "writing": {
+      "model": "zai-coding-plan/glm-4.7"
+    }
+  }
+}

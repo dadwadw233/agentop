@@ -5,6 +5,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, Optional, List
 from ..core.models import OpenCodeTokenUsage, OpenCodeMessage, OpenCodeSession
+from .opencode_cache import OpenCodeIndexCache
 
 
 class OpenCodeStatsParser:
@@ -21,6 +22,7 @@ class OpenCodeStatsParser:
             self.storage_path = Path(storage_path).expanduser()
         else:
             self.storage_path = Path("~/.local/share/opencode/storage").expanduser()
+        self.cache = OpenCodeIndexCache()
 
     def _parse_timestamp(self, value: Optional[int]) -> datetime:
         if not value:
@@ -123,7 +125,7 @@ class OpenCodeStatsParser:
 
     def get_all_messages(self, time_range: str = "all") -> List[OpenCodeMessage]:
         """
-        Get all messages from storage.
+        Get all messages from storage with caching.
 
         Args:
             time_range: Filter by time range (all, today, week, month)
@@ -140,6 +142,8 @@ class OpenCodeStatsParser:
         if not message_dir.exists():
             return messages
 
+        last_scan = self.cache.get_last_scan()
+
         for session_dir in message_dir.iterdir():
             if not session_dir.is_dir():
                 continue
@@ -148,6 +152,10 @@ class OpenCodeStatsParser:
                 message = self.parse_message(message_file)
                 if message and self._matches_time_range(message, time_range):
                     messages.append(message)
+
+        if messages:
+            latest_created = max(m.created_at for m in messages if m.created_at)
+            self.cache.set_last_scan(latest_created)
 
         return messages
 

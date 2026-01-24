@@ -22,6 +22,7 @@ class OpenCodePanel(Static):
         super().__init__(**kwargs)
         self.monitor = OpenCodeMonitor()
         self.current_view = "overview"
+        self.current_time_range = "all"
         self.views = ["overview", "sessions", "projects", "models", "agents", "timeline"]
 
     def on_mount(self) -> None:
@@ -32,7 +33,26 @@ class OpenCodePanel(Static):
     def refresh_data(self) -> None:
         """Refresh display with current metrics."""
         try:
-            metrics = self.monitor.get_metrics()
+            time_range = "today" if self.current_view == "overview" else self.current_time_range
+
+            if self.current_view == "overview":
+                required_aggregates = []
+            elif self.current_view == "sessions":
+                required_aggregates = ["by_session"]
+            elif self.current_view == "projects":
+                required_aggregates = ["by_project"]
+            elif self.current_view == "models":
+                required_aggregates = ["by_model"]
+            elif self.current_view == "agents":
+                required_aggregates = ["by_agent"]
+            elif self.current_view == "timeline":
+                required_aggregates = ["by_date"]
+            else:
+                required_aggregates = None
+
+            metrics = self.monitor.get_metrics(
+                time_range=time_range, required_aggregates=required_aggregates
+            )
             rendered = self._render_metrics(metrics)
             self.update(rendered)
         except Exception as e:
@@ -51,6 +71,12 @@ class OpenCodePanel(Static):
         prev_idx = (current_idx - 1) % len(self.views)
         self.current_view = self.views[prev_idx]
         self.refresh_data()
+
+    def set_time_range(self, time_range: str) -> None:
+        """Set time range for non-overview views."""
+        if time_range in ["today", "week", "month", "all"]:
+            self.current_time_range = time_range
+            self.refresh_data()
 
     def _render_metrics(self, metrics) -> Panel:
         """
@@ -159,7 +185,11 @@ class OpenCodePanel(Static):
 
             content_parts.append(table)
 
-        content_parts.append(Text("[dim]k/l: switch view[/dim]"))
+        hint_text = "[dim]k/l: switch view[/dim]"
+        if self.current_view != "overview":
+            time_label = self.current_time_range.title()
+            hint_text += f" | [dim]Time: {time_label} (t/w/m/a)[/dim]"
+        content_parts.append(Text(hint_text))
         content = Group(*content_parts)
 
         title = f"[bold]🔮 OPENCODE[/bold] {status_icon} {status_text} · {view_label}"

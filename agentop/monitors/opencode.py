@@ -1,7 +1,7 @@
 """OpenCode specific monitoring."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from ..core.models import OpenCodeMetrics, OpenCodeTokenUsage
 from ..core.constants import AgentType
 from ..parsers.opencode_stats import OpenCodeStatsParser
@@ -29,12 +29,15 @@ class OpenCodeMonitor:
         self.stats_parser = stats_parser or OpenCodeStatsParser(storage_path)
         self.agent_type = AgentType.OPENCODE
 
-    def get_metrics(self, time_range: str = "today") -> OpenCodeMetrics:
+    def get_metrics(
+        self, time_range: str = "today", required_aggregates: Optional[List[str]] = None
+    ) -> OpenCodeMetrics:
         """
         Get current metrics for OpenCode.
 
         Args:
             time_range: Time range for token aggregation (today, week, month, all)
+            required_aggregates: Optional list of aggregates to compute. If None, compute all.
 
         Returns:
             OpenCodeMetrics object with all current data
@@ -53,6 +56,26 @@ class OpenCodeMonitor:
             total_tokens.cache_read_tokens += msg.tokens.cache_read_tokens
             total_tokens.cache_write_tokens += msg.tokens.cache_write_tokens
 
+        if required_aggregates is None:
+            required_aggregates = ["by_session", "by_agent", "by_model", "by_project", "by_date"]
+
+        by_session = {}
+        by_agent = {}
+        by_model = {}
+        by_project = {}
+        by_date = {}
+
+        if "by_session" in required_aggregates:
+            by_session = self.stats_parser.aggregate_by_session(messages)
+        if "by_agent" in required_aggregates:
+            by_agent = self.stats_parser.aggregate_by_agent(messages)
+        if "by_model" in required_aggregates:
+            by_model = self.stats_parser.aggregate_by_model(messages)
+        if "by_project" in required_aggregates:
+            by_project = self.stats_parser.aggregate_by_project(messages)
+        if "by_date" in required_aggregates:
+            by_date = self.stats_parser.aggregate_by_date(messages)
+
         metrics = OpenCodeMetrics(
             agent_type=str(self.agent_type.value),
             processes=processes,
@@ -62,12 +85,12 @@ class OpenCodeMonitor:
             tokens_today=total_tokens,
             active_sessions=len(processes) if is_active else 0,
             total_sessions_today=len(sessions),
-            by_session=self.stats_parser.aggregate_by_session(messages),
-            by_agent=self.stats_parser.aggregate_by_agent(messages),
-            by_model=self.stats_parser.aggregate_by_model(messages),
+            by_session=by_session,
+            by_agent=by_agent,
+            by_model=by_model,
             by_provider={},
-            by_project=self.stats_parser.aggregate_by_project(messages),
-            by_date=self.stats_parser.aggregate_by_date(messages),
+            by_project=by_project,
+            by_date=by_date,
             stats_last_updated=None,
         )
 

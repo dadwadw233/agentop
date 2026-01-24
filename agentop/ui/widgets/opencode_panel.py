@@ -4,7 +4,9 @@ from textual.widgets import Static
 from rich.panel import Panel
 from rich.text import Text
 from rich.console import Group
+from rich.table import Table
 from datetime import datetime
+import math
 
 from ...monitors.opencode import OpenCodeMonitor
 
@@ -25,16 +27,23 @@ class OpenCodePanel(Static):
         self.current_time_range = "all"
         self.views = ["overview", "sessions", "projects", "models", "agents", "timeline"]
 
+        # Pagination state
+        self.page_index = 0
+        self.page_size = 10  # Default fallback
+
     def on_mount(self) -> None:
         """Set up periodic refresh."""
         self.set_interval(1.0, self.refresh_data)
+        self._update_page_size()
         self.refresh_data()
 
     def refresh_data(self) -> None:
         """Refresh display with current metrics."""
+        self._update_page_size()
         try:
             time_range = "today" if self.current_view == "overview" else self.current_time_range
 
+            required_aggregates = None
             if self.current_view == "overview":
                 required_aggregates = []
             elif self.current_view == "sessions":
@@ -47,8 +56,6 @@ class OpenCodePanel(Static):
                 required_aggregates = ["by_agent"]
             elif self.current_view == "timeline":
                 required_aggregates = ["by_date"]
-            else:
-                required_aggregates = None
 
             metrics = self.monitor.get_metrics(
                 time_range=time_range, required_aggregates=required_aggregates
@@ -56,13 +63,14 @@ class OpenCodePanel(Static):
             rendered = self._render_metrics(metrics)
             self.update(rendered)
         except Exception as e:
-            self.update(f"[red]Error: {e}[/red]")
+            self.update(Panel(f"[red]Error: {e}[/red]", title="Error"))
 
     def next_view(self) -> None:
         """Switch to next subview."""
         current_idx = self.views.index(self.current_view)
         next_idx = (current_idx + 1) % len(self.views)
         self.current_view = self.views[next_idx]
+        self.page_index = 0  # Reset pagination
         self.refresh_data()
 
     def prev_view(self) -> None:
@@ -70,6 +78,7 @@ class OpenCodePanel(Static):
         current_idx = self.views.index(self.current_view)
         prev_idx = (current_idx - 1) % len(self.views)
         self.current_view = self.views[prev_idx]
+        self.page_index = 0  # Reset pagination
         self.refresh_data()
 
     def set_time_range(self, time_range: str) -> None:
@@ -77,6 +86,50 @@ class OpenCodePanel(Static):
         if time_range in ["today", "week", "month", "all"]:
             self.current_time_range = time_range
             self.refresh_data()
+
+    def _update_page_size(self) -> None:
+        """Compute a stable page size from screen height."""
+        # Only relevant for list views
+        if self.current_view == "overview":
+            return
+
+        try:
+            app = self.app
+        except Exception:
+            return
+
+        if not app:
+            return
+
+        height = getattr(getattr(app, "size", None), "height", 0) or 0
+        if height <= 0:
+            return
+
+        # Estimate overhead: Title(1)+Border(2)+Padding(1)+Header(1)+Footer(2) = ~7-8
+        # We leave some buffer
+        overhead = 8
+
+        available = max(4, height - overhead)
+        self.page_size = available
+
+    def _create_bar(self, value: float, total: float, width: int = 15) -> str:
+        """Create a simple text-based progress bar."""
+        if total == 0:
+            return "░" * width
+
+        percentage = min(1.0, max(0.0, value / total))
+        filled = int(percentage * width)
+        empty = width - filled
+
+        # Color gradient based on usage intensity (heuristic)
+        color = "cyan"
+        if percentage > 0.8:
+            color = "magenta"
+        elif percentage > 0.5:
+            color = "blue"
+
+        bar = f"[{color}]{'█' * filled}[/{color}][dim]{'░' * empty}[/dim]"
+        return bar
 
     def _render_metrics(self, metrics) -> Panel:
         """
@@ -91,112 +144,206 @@ class OpenCodePanel(Static):
         if metrics.is_active:
             status_icon = "🟢"
             status_text = "[bold green]Active[/bold green]"
+            border_style = "green"
         else:
             status_icon = "⚪"
             status_text = "[dim]Idle[/dim]"
+            border_style = "dim"
 
         view_label = self.current_view.title()
+
+        # Title construction
+        title = f"[bold]🔮 OPENCODE[/bold] {status_icon} {status_text} · [bold cyan]{view_label}[/bold cyan]"
+
         content_parts = []
 
-        from rich.table import Table
-
-        def build_table(title_text, items):
-            table = Table(show_header=True, header_style="bold magenta", title=title_text)
-            table.add_column("Name", overflow="fold")
-            table.add_column("Tokens", justify="right")
-            if not items:
-                table.add_row("No data", "0")
-                return table
-            for name, usage in items[:10]:
-                total_tokens = getattr(usage, "total_tokens", 0)
-                table.add_row(str(name), f"{total_tokens:,}")
-            return table
-
         if self.current_view == "overview":
-            proc_table = Table.grid(padding=(0, 2), expand=True)
-            proc_table.add_column(style="bold cyan", width=18)
-            proc_table.add_column()
-
-            if metrics.processes:
-                proc_table.add_row("Processes:", f"{len(metrics.processes)} running")
-                if metrics.processes:
-                    uptime_hours = metrics.processes[0].uptime / 3600
-                    proc_table.add_row("Uptime:", f"{uptime_hours:.1f} hours")
-                proc_table.add_row("CPU:", f"{metrics.total_cpu:.1f}%")
-                proc_table.add_row("Memory:", f"{metrics.total_memory_mb:.0f} MB")
-            else:
-                proc_table.add_row("Processes:", "[dim]No processes running[/dim]")
-
-            session_table = Table.grid(padding=(0, 2), expand=True)
-            session_table.add_column(style="bold cyan", width=18)
-            session_table.add_column()
-
-            session_table.add_row("Sessions:", f"{metrics.active_sessions} active")
-            session_table.add_row("Total Today:", f"{metrics.total_sessions_today}")
-
-            token_table = Table.grid(padding=(0, 2), expand=True)
-            token_table.add_column(style="bold cyan", width=18)
-            token_table.add_column()
-
-            tokens = metrics.tokens_today
-            if tokens.total_tokens > 0:
-                token_table.add_row("Tokens (Today):", f"[bold]{tokens.total_tokens:,}[/bold]")
-                if tokens.input_tokens > 0:
-                    token_table.add_row("  Input:", f"{tokens.input_tokens:,}")
-                if tokens.output_tokens > 0:
-                    token_table.add_row("  Output:", f"{tokens.output_tokens:,}")
-                if tokens.reasoning_tokens > 0:
-                    token_table.add_row("  Reasoning:", f"{tokens.reasoning_tokens:,}")
-                if tokens.cache_read_tokens > 0 or tokens.cache_write_tokens > 0:
-                    token_table.add_row(
-                        "  Cache:",
-                        f"{tokens.cache_read_tokens:,} R / {tokens.cache_write_tokens:,} W",
-                    )
-            else:
-                token_table.add_row("Tokens (Today):", "[dim]No usage today[/dim]")
-
-            if metrics.stats_last_updated:
-                token_table.add_row(
-                    "Updated:", f"[dim]{_format_timestamp(metrics.stats_last_updated)}[/dim]"
-                )
-
-            content_parts.extend([proc_table, Text(""), session_table, Text(""), token_table])
+            content_parts.append(self._render_overview(metrics))
         else:
-            if self.current_view == "sessions":
-                items = list(getattr(metrics, "by_session", {}).items())
-                items = sorted(items, key=lambda item: item[1].total_tokens, reverse=True)
-                table = build_table("Sessions", items)
-            elif self.current_view == "projects":
-                items = list(getattr(metrics, "by_project", {}).items())
-                items = sorted(items, key=lambda item: item[1].total_tokens, reverse=True)
-                table = build_table("Projects", items)
-            elif self.current_view == "models":
-                items = list(getattr(metrics, "by_model", {}).items())
-                items = sorted(items, key=lambda item: item[1].total_tokens, reverse=True)
-                table = build_table("Models", items)
-            elif self.current_view == "agents":
-                items = list(getattr(metrics, "by_agent", {}).items())
-                items = sorted(items, key=lambda item: item[1].total_tokens, reverse=True)
-                table = build_table("Agents", items)
-            else:
-                items = list(getattr(metrics, "by_date", {}).items())
-                items = sorted(items, key=lambda item: item[0], reverse=True)
-                table = build_table("Timeline", items)
+            content_parts.append(self._render_subview(metrics))
 
-            content_parts.append(table)
-
+        # Footer / Hints
         hint_text = "[dim]k/l: switch view[/dim]"
         if self.current_view != "overview":
             time_label = self.current_time_range.title()
             hint_text += f" | [dim]Time: {time_label} (t/w/m/a)[/dim]"
-        content_parts.append(Text(hint_text))
-        content = Group(*content_parts)
 
-        title = f"[bold]🔮 OPENCODE[/bold] {status_icon} {status_text} · {view_label}"
+        # Add update time if available
+        if metrics.stats_last_updated:
+            updated = _format_timestamp(metrics.stats_last_updated)
+            hint_text += f" | [dim]Updated: {updated}[/dim]"
+
+        content_parts.append(Text("\n" + hint_text, justify="center"))
+
+        content = Group(*content_parts)
 
         return Panel(
             content,
             title=title,
-            border_style="magenta" if metrics.is_active else "dim",
-            padding=(1, 2),
+            border_style=border_style,
+            padding=(0, 1),
         )
+
+    def _render_overview(self, metrics) -> Group:
+        """Render the overview dashboard."""
+
+        # 1. Process Status Section
+        proc_grid = Table.grid(padding=(0, 2), expand=True)
+        proc_grid.add_column(style="bold blue", width=12)
+        proc_grid.add_column()
+        proc_grid.add_column(style="bold blue", width=12)
+        proc_grid.add_column()
+
+        if metrics.processes:
+            p = metrics.processes[0]
+            uptime_hours = p.uptime / 3600
+            proc_count = len(metrics.processes)
+
+            proc_grid.add_row("STATUS", "[green]Running[/green]", "PROCESSES", f"{proc_count}")
+            proc_grid.add_row(
+                "CPU", f"{metrics.total_cpu:.1f}%", "MEMORY", f"{metrics.total_memory_mb:.0f} MB"
+            )
+            proc_grid.add_row("UPTIME", f"{uptime_hours:.1f}h", "", "")
+        else:
+            proc_grid.add_row("STATUS", "[dim]Stopped[/dim]", "", "")
+
+        # 2. Daily Stats Section
+        stats_table = Table(
+            show_header=True, header_style="bold magenta", expand=True, box=None, padding=(0, 1)
+        )
+        stats_table.add_column("Daily Activity")
+        stats_table.add_column("Count", justify="right")
+
+        stats_table.add_row("Sessions Active", str(metrics.active_sessions))
+        stats_table.add_row("Sessions Total", str(metrics.total_sessions_today))
+
+        # 3. Token Usage Section
+        tokens = metrics.tokens_today
+        token_grid = Table.grid(padding=(0, 2), expand=True)
+        token_grid.add_column(style="dim", width=15)
+        token_grid.add_column(justify="right")
+
+        if tokens.total_tokens > 0:
+            token_grid.add_row(
+                "[bold]Total Tokens[/bold]", f"[bold cyan]{tokens.total_tokens:,}[/bold cyan]"
+            )
+            if tokens.input_tokens > 0:
+                token_grid.add_row("Input", f"{tokens.input_tokens:,}")
+            if tokens.output_tokens > 0:
+                token_grid.add_row("Output", f"{tokens.output_tokens:,}")
+            if tokens.reasoning_tokens > 0:
+                token_grid.add_row("Reasoning", f"{tokens.reasoning_tokens:,}")
+            if tokens.cache_read_tokens > 0 or tokens.cache_write_tokens > 0:
+                token_grid.add_row(
+                    "Cache (R/W)", f"{tokens.cache_read_tokens:,} / {tokens.cache_write_tokens:,}"
+                )
+        else:
+            token_grid.add_row("Total Tokens", "[dim]0[/dim]")
+
+        # Combine sections with visual separation
+        return Group(
+            Text(""),
+            proc_grid,
+            Text(""),
+            Panel(
+                stats_table,
+                border_style="dim",
+                title="[bold]Session Stats[/bold]",
+                title_align="left",
+            ),
+            Panel(
+                token_grid,
+                border_style="dim",
+                title="[bold]Token Usage (Today)[/bold]",
+                title_align="left",
+            ),
+        )
+
+    def _render_subview(self, metrics) -> Table:
+        """Render lists for sessions, projects, etc."""
+
+        # Determine data source
+        items = []
+        name_label = "Name"
+
+        if self.current_view == "sessions":
+            data = getattr(metrics, "by_session", {})
+            items = list(data.items())
+            name_label = "Session ID"
+        elif self.current_view == "projects":
+            data = getattr(metrics, "by_project", {})
+            items = list(data.items())
+            name_label = "Project Path"
+        elif self.current_view == "models":
+            data = getattr(metrics, "by_model", {})
+            items = list(data.items())
+            name_label = "Model Name"
+        elif self.current_view == "agents":
+            data = getattr(metrics, "by_agent", {})
+            items = list(data.items())
+            name_label = "Agent Type"
+        elif self.current_view == "timeline":
+            data = getattr(metrics, "by_date", {})
+            items = list(data.items())
+            name_label = "Date"
+
+        # Sort items
+        if self.current_view == "timeline":
+            items = sorted(items, key=lambda item: item[0], reverse=True)
+        else:
+            items = sorted(items, key=lambda item: item[1].total_tokens, reverse=True)
+
+        # Calculate max tokens for progress bars
+        max_tokens = 0
+        if items and self.current_view != "timeline":
+            max_tokens = items[0][1].total_tokens
+        elif items and self.current_view == "timeline":
+            # For timeline, find max tokens among all dates
+            max_tokens = max((item[1].total_tokens for item in items), default=0)
+
+        # Pagination
+        total_items = len(items)
+        total_pages = max(1, math.ceil(total_items / self.page_size))
+        self.page_index = min(self.page_index, total_pages - 1)
+        start_idx = self.page_index * self.page_size
+        end_idx = start_idx + self.page_size
+        page_items = items[start_idx:end_idx]
+
+        # Build Table
+        table = Table(box=None, expand=True, padding=(0, 1))
+        table.add_column(name_label, style="bold", ratio=2)
+
+        # Add visual bar column
+        table.add_column("Usage", justify="left", ratio=2)
+        table.add_column("Tokens", justify="right", style="cyan", ratio=1)
+
+        if not page_items:
+            table.add_row("[dim]No data available[/dim]", "", "")
+            return table
+
+        for key, usage in page_items:
+            # Handle key display (truncate if needed)
+            display_key = str(key)
+            if len(display_key) > 30:
+                if "/" in display_key:
+                    # Path-like truncation
+                    parts = display_key.split("/")
+                    if len(parts) > 2:
+                        display_key = f".../{parts[-2]}/{parts[-1]}"
+                    else:
+                        display_key = "..." + display_key[-27:]
+                else:
+                    display_key = display_key[:27] + "..."
+
+            total = getattr(usage, "total_tokens", 0)
+
+            # For timeline, we also want bars
+            bar = self._create_bar(total, max_tokens, width=15)
+
+            table.add_row(display_key, bar, f"{total:,}")
+
+        # Add pagination footer row if needed
+        if total_pages > 1:
+            table.add_row(f"\n[dim]Page {self.page_index + 1}/{total_pages}[/dim]", "", "")
+
+        return table

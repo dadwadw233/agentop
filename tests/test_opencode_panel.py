@@ -55,10 +55,6 @@ def test_panel_switches_subviews():
 
     # Switch to next view
     panel.next_view()
-    assert panel.current_view == "sessions"
-
-    # Switch to next view
-    panel.next_view()
     assert panel.current_view == "projects"
 
     # Switch to next view
@@ -130,4 +126,4 @@ def test_panel_renders_view_hint():
     render_group = cast(Group, rendered.renderable)
     renderables = render_group.renderables
     hint = cast(Text, renderables[-1]).plain
-    assert "k/l" in hint
+    assert "switch views" in hint

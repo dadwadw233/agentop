@@ -25,7 +25,7 @@ class OpenCodePanel(Static):
         self.monitor = OpenCodeMonitor()
         self.current_view = "overview"
         self.current_time_range = "all"
-        self.views = ["overview", "sessions", "projects", "models", "agents", "timeline"]
+        self.views = ["overview", "projects", "models", "agents", "timeline"]
 
         # Pagination state
         self.page_index = 0
@@ -46,8 +46,6 @@ class OpenCodePanel(Static):
             required_aggregates = None
             if self.current_view == "overview":
                 required_aggregates = []
-            elif self.current_view == "sessions":
-                required_aggregates = ["by_session"]
             elif self.current_view == "projects":
                 required_aggregates = ["by_project"]
             elif self.current_view == "models":
@@ -163,7 +161,7 @@ class OpenCodePanel(Static):
             content_parts.append(self._render_subview(metrics))
 
         # Footer / Hints
-        hint_text = "[dim]k/l: switch view[/dim]"
+        hint_text = "[dim]k/l: switch views (1-5)[/dim]"
         if self.current_view != "overview":
             time_label = self.current_time_range.title()
             hint_text += f" | [dim]Time: {time_label} (t/w/m/a)[/dim]"
@@ -266,11 +264,7 @@ class OpenCodePanel(Static):
         items = []
         name_label = "Name"
 
-        if self.current_view == "sessions":
-            data = getattr(metrics, "by_session", {})
-            items = list(data.items())
-            name_label = "Session ID"
-        elif self.current_view == "projects":
+        if self.current_view == "projects":
             data = getattr(metrics, "by_project", {})
             items = list(data.items())
             name_label = "Project Path"

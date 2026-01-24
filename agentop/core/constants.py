@@ -9,6 +9,7 @@ class AgentType(str, Enum):
     CLAUDE_CODE = "claude_code"
     COPILOT = "copilot"
     CODEX = "codex"
+    OPENCODE = "opencode"
 
 
 # Process detection patterns
@@ -28,6 +29,14 @@ AGENT_PATTERNS = {
             r"\bopenai[-_ ]?codex\b",
         ],
         "min_memory_mb": 40,
+    },
+    AgentType.OPENCODE: {
+        "process_names": ["node"],
+        "cmdline_patterns": [
+            r"(?:^|/)node(?:\s+|$)",
+            r"\bopencode\b",
+        ],
+        "min_memory_mb": 100,
     },
 }
 

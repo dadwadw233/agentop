@@ -50,6 +50,28 @@ class TokenUsage:
 
 
 @dataclass
+class OpenCodeTokenUsage:
+    """OpenCode-specific token usage statistics with cache and reasoning tokens."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    reasoning_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
+
+    @property
+    def total_tokens(self) -> int:
+        """Total tokens used including reasoning and cache."""
+        return (
+            self.input_tokens
+            + self.output_tokens
+            + self.reasoning_tokens
+            + self.cache_read_tokens
+            + self.cache_write_tokens
+        )
+
+
+@dataclass
 class CostEstimate:
     """Cost estimation."""
 
@@ -181,3 +203,56 @@ class SessionData:
     tokens: TokenUsage = field(default_factory=TokenUsage)
     cost: CostEstimate = field(default_factory=lambda: CostEstimate(0.0))
     message_count: int = 0
+
+
+@dataclass
+class OpenCodeMessage:
+    """Data from a single OpenCode message."""
+
+    message_id: str
+    session_id: str
+    role: str
+    model_id: str
+    provider_id: str
+    agent: Optional[str] = None
+    project_path: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.now)
+    completed_at: Optional[datetime] = None
+    tokens: OpenCodeTokenUsage = field(default_factory=OpenCodeTokenUsage)
+
+
+@dataclass
+class OpenCodeSession:
+    """Data from a single OpenCode session."""
+
+    session_id: str
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    model_id: Optional[str] = None
+    provider_id: Optional[str] = None
+    agent: Optional[str] = None
+    project_path: Optional[str] = None
+    tokens: OpenCodeTokenUsage = field(default_factory=OpenCodeTokenUsage)
+    message_count: int = 0
+
+
+@dataclass
+class OpenCodeMetrics(AgentMetrics):
+    """Metrics specific to OpenCode."""
+
+    agent_type: str = "opencode"
+
+    active_sessions: int = 0
+    total_sessions_today: int = 0
+
+    total_tokens: OpenCodeTokenUsage = field(default_factory=OpenCodeTokenUsage)
+    tokens_today: OpenCodeTokenUsage = field(default_factory=OpenCodeTokenUsage)
+
+    by_session: dict = field(default_factory=dict)
+    by_agent: dict = field(default_factory=dict)
+    by_model: dict = field(default_factory=dict)
+    by_provider: dict = field(default_factory=dict)
+    by_project: dict = field(default_factory=dict)
+    by_date: dict = field(default_factory=dict)
+
+    stats_last_updated: Optional[datetime] = None

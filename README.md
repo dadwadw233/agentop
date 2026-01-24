@@ -16,6 +16,7 @@ A terminal UI tool for monitoring local AI coding agents — like `nvtop`/`htop`
 | **Claude Code** | ✅ | ✅ | ✅ | Stable |
 | **Antigravity** | ⏳ | ⏳ | ✅ | Beta |
 | **OpenAI Codex** | ✅ | ✅ | ✅ | Beta |
+| **OpenCode** | ✅ | ✅ | ⏳ | Beta |
 
 ## Supported Platforms (has been tested)
 
@@ -54,6 +55,7 @@ python3 show_stats.py
 - Claude stats: `~/.claude/stats-cache.json`
 - Codex usage/quota: `/usage` API via Codex auth (`~/.codex/auth.json`)
 - Antigravity quota: Google Cloud Code API via Antigravity auth (local state db)
+- OpenCode stats: `~/.local/share/opencode/storage/` (message + session directories)
 
 ## Roadmap
 

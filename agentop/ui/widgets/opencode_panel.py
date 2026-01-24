@@ -161,18 +161,18 @@ class OpenCodePanel(Static):
             content_parts.append(self._render_subview(metrics))
 
         # Footer / Hints
-        hint_parts = ["[dim]k/l: switch views (1-5)[/dim]"]
+        hint_parts = ["k/l: switch views (1-5)"]
 
         if self.current_view != "overview":
             time_label = self.current_time_range.title()
-            hint_parts.append(f" | [dim]Time: {time_label} (t/w/m/a)[/dim]")
+            hint_parts.append(f" | Time: {time_label} (t/w/m/a)")
 
         # Add update time if available
         if metrics.stats_last_updated:
             updated = _format_timestamp(metrics.stats_last_updated)
-            hint_parts.append(f" | [dim]Updated: {updated}[/dim]")
+            hint_parts.append(f" | Updated: {updated}")
 
-        content_parts.append(Text("\n" + "".join(hint_parts), justify="center"))
+        content_parts.append(Text("\n" + " | ".join(hint_parts), justify="center"))
 
         content = Group(*content_parts)
 

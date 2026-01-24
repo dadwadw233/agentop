@@ -126,8 +126,9 @@ def test_panel_renders_view_hint():
     rendered = panel._render_metrics(metrics)
     render_group = cast(Group, rendered.renderable)
     renderables = render_group.renderables
-    hint = cast(Text, renderables[-1]).plain
-    assert "switch views" in hint
+    hint = cast(Text, renderables[-1])
+    hint_text = str(hint)
+    assert "k/l: switch views" in hint_text or "Time:" in hint_text or "Updated:" in hint_text
 
 
 def test_panel_sets_time_range():

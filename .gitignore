@@ -44,6 +44,7 @@ htmlcov/
 *.log
 3rd/
 .claude/
+.worktrees/
 PROJECT_PLAN.md
 MVP_SUMMARY.md
 QUICKSTART.md

@@ -184,30 +184,31 @@ class ClaudeCodePanel(Static):
             )
 
             # Input/Output breakdown
+            total = month_tokens.total_tokens or 1
+
             if month_tokens.input_tokens > 0:
-                input_pct = (month_tokens.input_tokens / month_tokens.total_tokens) * 100
+                input_pct = (month_tokens.input_tokens / total) * 100
                 token_table.add_row(
                     "  Input:",
                     f"{month_tokens.input_tokens:,} {_bar(input_pct, 100, 15)} {input_pct:.0f}%",
                 )
 
             if month_tokens.output_tokens > 0:
-                output_pct = (month_tokens.output_tokens / month_tokens.total_tokens) * 100
+                output_pct = (month_tokens.output_tokens / total) * 100
                 token_table.add_row(
                     "  Output:",
                     f"{month_tokens.output_tokens:,} {_bar(output_pct, 100, 15)} {output_pct:.0f}%",
                 )
+
+            cache_w = getattr(month_tokens, "cache_write_tokens", 0)
+            cache_r = getattr(month_tokens, "cache_read_tokens", 0)
+            if cache_w > 0 or cache_r > 0:
+                token_table.add_row(
+                    "  Cache W/R:",
+                    f"{cache_w:,} / {cache_r:,}",
+                )
         else:
             token_table.add_row("Tokens (Month):", "[dim]No usage this month[/dim]")
-
-        # Today
-        today_tokens = metrics.tokens_today
-        if today_tokens.total_tokens > 0:
-            token_table.add_row("Tokens (Today):", f"{today_tokens.total_tokens:,}")
-        else:
-            token_table.add_row(
-                "Tokens (Today):", "[dim]0 (stats may not be updated yet)[/dim]"
-            )
 
         token_table.add_row(
             "Stats updated:",
@@ -222,9 +223,6 @@ class ClaudeCodePanel(Static):
         cost_table.add_column(style="bold cyan", width=18)
         cost_table.add_column()
 
-        cost_table.add_row(
-            "Cost (Today):", f"[bold green]${metrics.cost_today.amount:.2f}[/bold green]"
-        )
         cost_table.add_row(
             "Cost (Month):",
             f"[bold yellow]${metrics.cost_this_month.amount:.2f}[/bold yellow]",

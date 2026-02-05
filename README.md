@@ -52,7 +52,8 @@ python3 show_stats.py
 
 ## Data Sources
 
-- Claude stats: `~/.claude/stats-cache.json`
+- Claude stats: JSONL logs under `~/.config/claude/projects/` or `~/.claude/projects/`
+  (override with `CLAUDE_CONFIG_DIR`, supports comma-separated paths)
 - Codex usage/quota: `/usage` API via Codex auth (`~/.codex/auth.json`)
 - Antigravity quota: Google Cloud Code API via Antigravity auth (local state db)
 - OpenCode stats: `~/.local/share/opencode/storage/` (message + session directories)

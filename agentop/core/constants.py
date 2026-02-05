@@ -1,5 +1,6 @@
 """Constants and enumerations."""
 
+import os
 from enum import Enum
 
 
@@ -49,6 +50,10 @@ CLAUDE_PRICING = {
 }
 
 # Default paths
+CLAUDE_CONFIG_DIR_ENV = "CLAUDE_CONFIG_DIR"
+CLAUDE_PROJECTS_DIRNAME = "projects"
+_XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", "~/.config")
+DEFAULT_CLAUDE_CONFIG_DIRS = [f"{_XDG_CONFIG_HOME}/claude", "~/.claude"]
 DEFAULT_CLAUDE_LOGS_DIR = "~/.claude-code/sessions/"
 DEFAULT_CODEX_STATS_FILES = [
     "~/.codex/stats.json",

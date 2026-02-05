@@ -119,9 +119,13 @@ class ClaudeLogParser:
             if usage:
                 input_tokens = usage.get("input_tokens", 0)
                 output_tokens = usage.get("output_tokens", 0)
+                cache_write_tokens = usage.get("cache_creation_input_tokens", 0)
+                cache_read_tokens = usage.get("cache_read_input_tokens", 0)
 
                 tokens.input_tokens += input_tokens
                 tokens.output_tokens += output_tokens
+                tokens.cache_write_tokens += cache_write_tokens
+                tokens.cache_read_tokens += cache_read_tokens
 
                 # Calculate cost
                 model = entry.get("model", "")

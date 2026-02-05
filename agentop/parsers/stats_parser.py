@@ -1,45 +1,53 @@
-"""Parser for Claude Code stats-cache.json file."""
+"""Parser for Claude Code JSONL usage data."""
+
+from __future__ import annotations
 
 import json
-from pathlib import Path
+import os
+from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Dict, Any, Optional, Iterable, Set, Tuple
+
+from ..core.constants import (
+    CLAUDE_CONFIG_DIR_ENV,
+    CLAUDE_PROJECTS_DIRNAME,
+    DEFAULT_CLAUDE_CONFIG_DIRS,
+    CLAUDE_PRICING,
+)
+from ..parsers.litellm_pricing import LiteLLMCostCalculator
 from ..core.models import TokenUsage, CostEstimate
-from ..core.constants import CLAUDE_PRICING
+
+
+@dataclass
+class _UsageEntry:
+    timestamp: datetime
+    input_tokens: int
+    output_tokens: int
+    cache_write_tokens: int
+    cache_read_tokens: int
+    model: Optional[str]
+    cost_usd: Optional[float]
+    session_id: Optional[str]
 
 
 class ClaudeStatsParser:
-    """Parse Claude Code stats-cache.json for usage statistics."""
+    """Parse Claude Code JSONL usage data under ~/.config/claude/projects."""
 
-    def __init__(self, stats_file: Optional[str] = None):
+    def __init__(self, stats_file: Optional[str] = None, cache_ttl_seconds: int = 10):
         """
         Initialize parser.
 
         Args:
-            stats_file: Path to stats-cache.json (default: ~/.claude/stats-cache.json)
+            stats_file: Optional custom Claude data directory or JSONL file
+            cache_ttl_seconds: Cache usage aggregation for N seconds
         """
-        if stats_file:
-            self.stats_file = Path(stats_file).expanduser()
-        else:
-            self.stats_file = Path("~/.claude/stats-cache.json").expanduser()
-
-    def parse_stats(self) -> Dict[str, Any]:
-        """
-        Parse the stats-cache.json file.
-
-        Returns:
-            Dictionary with usage statistics
-        """
-        if not self.stats_file.exists():
-            return self._empty_stats()
-
-        try:
-            with open(self.stats_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data
-        except Exception as e:
-            print(f"Error parsing stats file: {e}")
-            return self._empty_stats()
+        self._custom_path = Path(stats_file).expanduser() if stats_file else None
+        self._usage_cache: Optional[Dict[str, Any]] = None
+        self._last_scan: Optional[datetime] = None
+        self._last_updated: Optional[datetime] = None
+        self.cache_ttl_seconds = max(2, cache_ttl_seconds)
+        self._cost_calculator = LiteLLMCostCalculator()
 
     def get_today_usage(self) -> Dict[str, Any]:
         """
@@ -48,56 +56,10 @@ class ClaudeStatsParser:
         Returns:
             Dictionary with today's tokens, cost, and session info
         """
-        stats = self.parse_stats()
-        today = date.today().isoformat()
-
-        # Find today's activity
-        today_activity = None
-        for activity in stats.get("dailyActivity", []):
-            if activity["date"] == today:
-                today_activity = activity
-                break
-
-        # Find today's tokens
-        today_tokens = {}
-        for token_data in stats.get("dailyModelTokens", []):
-            if token_data["date"] == today:
-                today_tokens = token_data.get("tokensByModel", {})
-                break
-
-        # Calculate totals
-        total_tokens = sum(today_tokens.values())
-
-        # Calculate cost (approximation, as we don't have input/output split in daily data)
-        total_cost = self._estimate_cost_from_total(today_tokens)
-
-        # Session info
-        active_sessions = self._count_active_sessions(stats)
-
-        return {
-            "tokens": TokenUsage(
-                input_tokens=int(total_tokens * 0.3),  # Rough estimate: 30% input
-                output_tokens=int(total_tokens * 0.7),  # 70% output
-            ),
-            "cost": total_cost,
-            "total_sessions": today_activity["sessionCount"] if today_activity else 0,
-            "active_sessions": active_sessions,
-            "message_count": today_activity["messageCount"] if today_activity else 0,
-        }
-
-    def get_stats_last_updated(self) -> Optional[datetime]:
-        """
-        Get the last modified time of the stats file.
-
-        Returns:
-            Datetime of last update, or None if unavailable
-        """
-        if not self.stats_file.exists():
-            return None
-        try:
-            return datetime.fromtimestamp(self.stats_file.stat().st_mtime)
-        except Exception:
-            return None
+        usage = self._collect_usage()
+        today = date.today()
+        bucket = usage["buckets"].get(today)
+        return self._format_bucket(bucket)
 
     def get_month_usage(self) -> Dict[str, Any]:
         """
@@ -106,165 +68,283 @@ class ClaudeStatsParser:
         Returns:
             Dictionary with month's tokens and cost
         """
-        stats = self.parse_stats()
+        usage = self._collect_usage()
         today = date.today()
-        current_month = today.strftime("%Y-%m")
-
-        # Sum up all days in current month
-        month_tokens = {}
-        for token_data in stats.get("dailyModelTokens", []):
-            if token_data["date"].startswith(current_month):
-                for model, tokens in token_data.get("tokensByModel", {}).items():
-                    month_tokens[model] = month_tokens.get(model, 0) + tokens
-
-        total_tokens = sum(month_tokens.values())
-        total_cost = self._estimate_cost_from_total(month_tokens)
-
-        return {
-            "tokens": TokenUsage(
-                input_tokens=int(total_tokens * 0.3),
-                output_tokens=int(total_tokens * 0.7),
-            ),
-            "cost": total_cost,
-        }
-
-    def get_total_usage(self) -> Dict[str, Any]:
-        """
-        Get total usage from modelUsage.
-
-        Returns:
-            Dictionary with total usage statistics
-        """
-        stats = self.parse_stats()
-        model_usage = stats.get("modelUsage", {})
-
-        total_input = 0
-        total_output = 0
+        total_tokens = TokenUsage()
         total_cost = 0.0
+        cost_seen = False
 
-        for model, usage in model_usage.items():
-            input_tokens = usage.get("inputTokens", 0)
-            output_tokens = usage.get("outputTokens", 0)
-
-            total_input += input_tokens
-            total_output += output_tokens
-
-            # Calculate cost
-            model_name = self._normalize_model_name(model)
-            pricing = self._get_pricing(model_name)
-            if pricing:
-                total_cost += (input_tokens / 1_000_000) * pricing["input"]
-                total_cost += (output_tokens / 1_000_000) * pricing["output"]
+        for usage_date, bucket in usage["buckets"].items():
+            if usage_date.year != today.year or usage_date.month != today.month:
+                continue
+            total_tokens.input_tokens += bucket["tokens"].input_tokens
+            total_tokens.output_tokens += bucket["tokens"].output_tokens
+            total_tokens.cache_write_tokens += bucket["tokens"].cache_write_tokens
+            total_tokens.cache_read_tokens += bucket["tokens"].cache_read_tokens
+            if bucket["cost_seen"]:
+                total_cost += bucket["cost"]
+                cost_seen = True
 
         return {
-            "tokens": TokenUsage(
-                input_tokens=total_input,
-                output_tokens=total_output,
-            ),
-            "cost": total_cost,
-            "total_sessions": stats.get("totalSessions", 0),
-            "total_messages": stats.get("totalMessages", 0),
+            "tokens": total_tokens,
+            "cost": total_cost if cost_seen else 0.0,
         }
 
-    def _count_active_sessions(self, stats: Dict[str, Any]) -> int:
+    def get_stats_last_updated(self) -> Optional[datetime]:
         """
-        Count active sessions.
-
-        Note: This is a rough estimate. The stats file may not be updated in real-time.
-        Returns 0 if no recent activity detected.
-
-        Args:
-            stats: Parsed stats data
+        Get the last modified time of the newest Claude JSONL file.
 
         Returns:
-            Number of active sessions (estimated)
+            Datetime of last update, or None if unavailable
         """
-        # Check if we have any sessions at all
-        total_sessions = stats.get("totalSessions", 0)
-        if total_sessions == 0:
-            return 0
+        self._collect_usage()
+        return self._last_updated
 
-        # Check latest activity date
-        last_computed = stats.get("lastComputedDate", "")
-        today = date.today().isoformat()
+    def _collect_usage(self) -> Dict[str, Any]:
+        if self._usage_cache is not None and self._last_scan:
+            age = (datetime.now() - self._last_scan).total_seconds()
+            if age < self.cache_ttl_seconds:
+                return self._usage_cache
 
-        # If stats were updated today or yesterday, there might be active sessions
-        # Note: This is an approximation since stats may not be real-time
-        if last_computed >= today or last_computed == self._yesterday():
-            # Return 0 for now, will be updated when we detect running processes
-            return 0
+        if self._usage_cache is not None and not self._last_scan:
+            return self._usage_cache
 
-        return 0
+        buckets: Dict[date, Dict[str, Any]] = {}
+        self._last_updated = None
 
-    def _yesterday(self) -> str:
-        """Get yesterday's date as ISO string."""
-        from datetime import timedelta
-        yesterday = date.today() - timedelta(days=1)
-        return yesterday.isoformat()
+        processed_hashes: Set[str] = set()
+        for file_path in self._iter_usage_files():
+            try:
+                mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
+                if self._last_updated is None or mtime > self._last_updated:
+                    self._last_updated = mtime
+            except Exception:
+                pass
 
-    def _estimate_cost_from_total(self, tokens_by_model: Dict[str, int]) -> float:
-        """
-        Estimate cost from total tokens by model.
+            for entry in self._iter_entries(file_path, processed_hashes):
+                if entry.timestamp.tzinfo:
+                    entry_date = entry.timestamp.astimezone().date()
+                else:
+                    entry_date = entry.timestamp.date()
+                bucket = buckets.setdefault(
+                    entry_date,
+                    {
+                        "tokens": TokenUsage(),
+                        "cost": 0.0,
+                        "cost_seen": False,
+                        "sessions": set(),
+                    },
+                )
+                bucket["tokens"].input_tokens += entry.input_tokens
+                bucket["tokens"].output_tokens += entry.output_tokens
+                bucket["tokens"].cache_write_tokens += entry.cache_write_tokens
+                bucket["tokens"].cache_read_tokens += entry.cache_read_tokens
+                if entry.session_id:
+                    bucket["sessions"].add(entry.session_id)
+                if entry.cost_usd is not None:
+                    bucket["cost"] += entry.cost_usd
+                    bucket["cost_seen"] = True
 
-        Args:
-            tokens_by_model: Dictionary of model -> total tokens
+        self._usage_cache = {"buckets": buckets}
+        self._last_scan = datetime.now()
+        return self._usage_cache
 
-        Returns:
-            Estimated cost in USD
-        """
-        total_cost = 0.0
+    def _format_bucket(self, bucket: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        if not bucket:
+            return {
+                "tokens": TokenUsage(),
+                "cost": 0.0,
+                "total_sessions": 0,
+            }
 
-        for model, total_tokens in tokens_by_model.items():
-            model_name = self._normalize_model_name(model)
-            pricing = self._get_pricing(model_name)
-
-            if pricing:
-                # Estimate: 30% input, 70% output
-                input_tokens = int(total_tokens * 0.3)
-                output_tokens = int(total_tokens * 0.7)
-
-                total_cost += (input_tokens / 1_000_000) * pricing["input"]
-                total_cost += (output_tokens / 1_000_000) * pricing["output"]
-
-        return total_cost
-
-    def _normalize_model_name(self, model: str) -> str:
-        """
-        Normalize model name to match pricing keys.
-
-        Args:
-            model: Model name from stats (e.g., "claude-sonnet-4-5-20250929")
-
-        Returns:
-            Normalized model name
-        """
-        if "sonnet-4" in model or "sonnet-3.5" in model:
-            return "claude-sonnet-4"
-        elif "opus-4" in model:
-            return "claude-opus-4"
-        elif "haiku-4" in model:
-            return "claude-haiku-4"
-        return "claude-sonnet-4"  # Default
-
-    def _get_pricing(self, model_name: str) -> Optional[Dict[str, float]]:
-        """
-        Get pricing for a model.
-
-        Args:
-            model_name: Normalized model name
-
-        Returns:
-            Pricing dictionary or None
-        """
-        return CLAUDE_PRICING.get(model_name)
-
-    def _empty_stats(self) -> Dict[str, Any]:
-        """Return empty stats structure."""
         return {
-            "version": 1,
-            "dailyActivity": [],
-            "dailyModelTokens": [],
-            "modelUsage": {},
-            "totalSessions": 0,
-            "totalMessages": 0,
+            "tokens": bucket["tokens"],
+            "cost": bucket["cost"] if bucket["cost_seen"] else 0.0,
+            "total_sessions": len(bucket["sessions"]),
         }
+
+    def _iter_usage_files(self) -> Iterable[Path]:
+        config_dirs = self._resolve_config_dirs()
+        for config_dir in config_dirs:
+            projects_dir = config_dir / CLAUDE_PROJECTS_DIRNAME
+            if not projects_dir.exists():
+                continue
+            for file_path in projects_dir.rglob("*.jsonl"):
+                if file_path.is_file():
+                    yield file_path
+
+    def _resolve_config_dirs(self) -> Iterable[Path]:
+        if self._custom_path:
+            paths = self._expand_paths(str(self._custom_path))
+            resolved = self._normalize_config_dirs(paths)
+            if resolved:
+                return resolved
+            return []
+
+        env_paths = os.environ.get(CLAUDE_CONFIG_DIR_ENV, "").strip()
+        if env_paths:
+            paths = self._expand_paths(env_paths)
+            resolved = self._normalize_config_dirs(paths)
+            if resolved:
+                return resolved
+            return []
+
+        return self._normalize_config_dirs(DEFAULT_CLAUDE_CONFIG_DIRS)
+
+    def _expand_paths(self, raw: str) -> Iterable[Path]:
+        for part in raw.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            yield Path(part).expanduser()
+
+    def _normalize_config_dirs(self, paths: Iterable[Path | str]) -> Tuple[Path, ...]:
+        resolved: list[Path] = []
+        seen: set[Path] = set()
+        for path in paths:
+            if not isinstance(path, Path):
+                path = Path(path)
+            path = path.expanduser()
+            if path.is_file() and path.suffix == ".jsonl":
+                # Treat as explicit JSONL file path by using its parent dir.
+                path = path.parent
+            if path.name == CLAUDE_PROJECTS_DIRNAME:
+                path = path.parent
+            if not path.exists():
+                continue
+            if path in seen:
+                continue
+            projects_dir = path / CLAUDE_PROJECTS_DIRNAME
+            if projects_dir.exists():
+                resolved.append(path)
+                seen.add(path)
+        return tuple(resolved)
+
+    def _iter_entries(
+        self, file_path: Path, processed_hashes: Set[str]
+    ) -> Iterable[_UsageEntry]:
+        session_id = self._extract_session_id(file_path)
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    entry = self._parse_line(line, processed_hashes, session_id)
+                    if entry:
+                        yield entry
+        except Exception:
+            return
+
+    def _parse_line(
+        self, line: str, processed_hashes: Set[str], session_id: Optional[str]
+    ) -> Optional[_UsageEntry]:
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            return None
+
+        message = data.get("message")
+        if not isinstance(message, dict):
+            return None
+        usage = message.get("usage")
+        if not isinstance(usage, dict):
+            return None
+
+        unique_hash = self._create_unique_hash(message, data)
+        if unique_hash:
+            if unique_hash in processed_hashes:
+                return None
+            processed_hashes.add(unique_hash)
+
+        timestamp_raw = data.get("timestamp")
+        timestamp = self._parse_timestamp(timestamp_raw)
+        if not timestamp:
+            return None
+
+        input_tokens = int(usage.get("input_tokens", 0) or 0)
+        output_tokens = int(usage.get("output_tokens", 0) or 0)
+        cache_write_tokens = int(usage.get("cache_creation_input_tokens", 0) or 0)
+        cache_read_tokens = int(usage.get("cache_read_input_tokens", 0) or 0)
+        model = message.get("model") or data.get("model")
+        cost_usd = None
+        if isinstance(data.get("costUSD"), (int, float)):
+            cost_usd = float(data["costUSD"])
+        else:
+            cost_usd = self._estimate_cost(
+                model,
+                input_tokens,
+                output_tokens,
+                cache_write_tokens,
+                cache_read_tokens,
+            )
+
+        return _UsageEntry(
+            timestamp=timestamp,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cache_write_tokens=cache_write_tokens,
+            cache_read_tokens=cache_read_tokens,
+            model=model,
+            cost_usd=cost_usd,
+            session_id=session_id,
+        )
+
+    def _create_unique_hash(self, message: Dict[str, Any], data: Dict[str, Any]) -> Optional[str]:
+        message_id = message.get("id")
+        request_id = data.get("requestId")
+        if not message_id or not request_id:
+            return None
+        return f"{message_id}:{request_id}"
+
+    def _parse_timestamp(self, raw: Any) -> Optional[datetime]:
+        if not isinstance(raw, str):
+            return None
+        ts = raw.strip()
+        if ts.endswith("Z"):
+            ts = ts[:-1] + "+00:00"
+        try:
+            return datetime.fromisoformat(ts)
+        except ValueError:
+            return None
+
+    def _extract_session_id(self, file_path: Path) -> Optional[str]:
+        if file_path.name == "usage.jsonl" or file_path.name == "chat.jsonl":
+            return file_path.parent.name
+        if file_path.suffix == ".jsonl":
+            return file_path.stem
+        return None
+
+    def _estimate_cost(
+        self,
+        model: Optional[str],
+        input_tokens: int,
+        output_tokens: int,
+        cache_write_tokens: int,
+        cache_read_tokens: int,
+    ) -> float:
+        if not model:
+            return 0.0
+
+        cost = self._cost_calculator.calculate_cost(
+            model,
+            input_tokens,
+            output_tokens,
+            cache_write_tokens,
+            cache_read_tokens,
+        )
+        if cost > 0:
+            return cost
+
+        pricing = None
+        for model_key, prices in CLAUDE_PRICING.items():
+            if model_key in model:
+                pricing = prices
+                break
+        if not pricing:
+            return 0.0
+
+        input_cost = (input_tokens / 1_000_000) * pricing["input"]
+        output_cost = (output_tokens / 1_000_000) * pricing["output"]
+        return input_cost + output_cost

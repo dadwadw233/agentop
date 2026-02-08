@@ -54,7 +54,8 @@ python3 show_stats.py
 
 - Claude stats: JSONL logs under `~/.config/claude/projects/` or `~/.claude/projects/`
   (override with `CLAUDE_CONFIG_DIR`, supports comma-separated paths)
-- Codex usage/quota: `/usage` API via Codex auth (`~/.codex/auth.json`)
+- Codex token usage: local session logs under `~/.codex/sessions/`
+- Codex quota: `/usage` API via Codex auth (`~/.codex/auth.json`)
 - Antigravity quota: Google Cloud Code API via Antigravity auth (local state db)
 - OpenCode stats: `~/.local/share/opencode/storage/` (message + session directories)
 
@@ -90,7 +91,7 @@ python3 show_stats.py
 ## Known Limitations
 
 - Claude stats can lag behind real time
-- Codex usage is fetched from the API (not local files)
+- Codex local token stats depend on availability of `token_count` events in session logs
 - Antigravity quota depends on account access
 - Antigravity refresh requires `ANTIGRAVITY_OAUTH_CLIENT_SECRET` or a fresh login
 - Proxy users: if you see “unknown scheme for proxy URL”, set `AGENTOP_DISABLE_PROXY=1` or install `httpx[socks]`

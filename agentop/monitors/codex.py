@@ -6,6 +6,7 @@ from typing import Optional
 from ..core.constants import AgentType
 from ..core.models import CodexMetrics, TokenUsage
 from ..parsers.codex_rate_limits import CodexRateLimitClient
+from ..parsers.codex_stats import CodexStatsParser
 from .process import ProcessMonitor
 
 
@@ -23,6 +24,7 @@ class CodexMonitor:
             logs_dir: Optional custom logs directory path
         """
         self.process_monitor = ProcessMonitor()
+        self.stats_parser = CodexStatsParser(stats_file=stats_file, logs_dir=logs_dir)
         self.rate_limit_client = CodexRateLimitClient(cache_ttl_seconds=60)
         self.agent_type = AgentType.CODEX
 
@@ -37,18 +39,22 @@ class CodexMonitor:
         processes = self.process_monitor.find_agent_processes(self.agent_type)
         is_active = len(processes) > 0
 
-        # Codex CLI does not persist local usage statistics.
-        today_usage = None
-        month_usage = None
+        today_usage = self.stats_parser.get_today_usage()
+        month_usage = self.stats_parser.get_month_usage()
         rate_limits = self.rate_limit_client.get_rate_limits()
 
         tokens_today = today_usage["tokens"] if today_usage else TokenUsage()
         tokens_this_month = month_usage["tokens"] if month_usage else TokenUsage()
-        cost_today = today_usage["cost"] if today_usage else None
-        cost_this_month = month_usage["cost"] if month_usage else None
+        # Cost is intentionally not shown for Codex local logs.
+        cost_today = None
+        cost_this_month = None
         total_sessions_today = today_usage["total_sessions"] if today_usage else 0
 
         usage_source = None
+        if today_usage and today_usage.get("source"):
+            usage_source = today_usage["source"]
+        elif month_usage and month_usage.get("source"):
+            usage_source = month_usage["source"]
 
         rate_limits_source = None
         rate_limits_error = None

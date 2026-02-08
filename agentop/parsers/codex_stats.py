@@ -4,7 +4,7 @@ import json
 import os
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from ..core.constants import DEFAULT_CODEX_LOGS_DIRS, DEFAULT_CODEX_STATS_FILES
 from ..core.models import CostEstimate, TokenUsage
@@ -80,6 +80,8 @@ class CodexStatsParser:
                 continue
             total_tokens.input_tokens += bucket["tokens"].input_tokens
             total_tokens.output_tokens += bucket["tokens"].output_tokens
+            total_tokens.cache_write_tokens += bucket["tokens"].cache_write_tokens
+            total_tokens.cache_read_tokens += bucket["tokens"].cache_read_tokens
             total_sessions += len(bucket["sessions"])
             if bucket["cost_seen"]:
                 total_cost += bucket["cost"]
@@ -175,7 +177,7 @@ class CodexStatsParser:
     def _parse_logs_dir(self, logs_dir: Path, buckets: Dict[date, Dict[str, Any]]) -> None:
         patterns = ("*.jsonl", "*.log", "*.json")
         for pattern in patterns:
-            for file_path in logs_dir.glob(pattern):
+            for file_path in logs_dir.rglob(pattern):
                 if file_path.is_dir():
                     continue
                 if file_path.suffix.lower() == ".json":
@@ -186,6 +188,9 @@ class CodexStatsParser:
     def _parse_log_file(self, file_path: Path, buckets: Dict[date, Dict[str, Any]]) -> None:
         fallback_date = datetime.fromtimestamp(file_path.stat().st_mtime).date()
         default_session = file_path.stem
+        generic_rows: list[Tuple[date, TokenUsage, Optional[float], str]] = []
+        has_token_count = False
+        prev_total: Optional[TokenUsage] = None
 
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -198,6 +203,35 @@ class CodexStatsParser:
                     except json.JSONDecodeError:
                         continue
 
+                    # Codex session logs expose token usage under:
+                    # event_msg.payload.info.total_token_usage
+                    total_usage = self._extract_token_count_totals(entry)
+                    if total_usage is not None:
+                        has_token_count = True
+                        generic_rows.clear()
+                        entry_date = self._extract_date(entry) or fallback_date
+                        delta_usage = (
+                            total_usage
+                            if prev_total is None
+                            else self._subtract_usage(total_usage, prev_total)
+                        )
+                        prev_total = total_usage
+                        if delta_usage.total_tokens > 0:
+                            session_id = self._extract_session_id(entry) or default_session
+                            self._add_usage(
+                                buckets,
+                                entry_date,
+                                delta_usage,
+                                cost=None,
+                                session_id=session_id,
+                            )
+                        continue
+
+                    if has_token_count:
+                        # Once token_count is present in the file, ignore generic usage
+                        # extraction to avoid double counting.
+                        continue
+
                     usage = self._extract_usage(entry)
                     if not usage:
                         continue
@@ -205,9 +239,13 @@ class CodexStatsParser:
                     entry_date = self._extract_date(entry) or fallback_date
                     cost = self._extract_cost(entry)
                     session_id = self._extract_session_id(entry) or default_session
-                    self._add_usage(buckets, entry_date, usage, cost, session_id)
+                    generic_rows.append((entry_date, usage, cost, session_id))
         except Exception:
             return
+
+        if not has_token_count:
+            for entry_date, usage, cost, session_id in generic_rows:
+                self._add_usage(buckets, entry_date, usage, cost, session_id)
 
     def _extract_stats_entries(
         self,
@@ -307,8 +345,18 @@ class CodexStatsParser:
                 "completionTokens",
                 "response_tokens",
                 "responseTokens",
+                "reasoning_output_tokens",
+                "reasoningOutputTokens",
             ),
         )
+        reasoning_tokens = self._get_int_value(
+            usage_dict,
+            ("reasoning_output_tokens", "reasoningOutputTokens"),
+        ) or 0
+        cached_input_tokens = self._get_int_value(
+            usage_dict,
+            ("cached_input_tokens", "cachedInputTokens", "cache_read_input_tokens"),
+        ) or 0
         total_tokens = self._get_int_value(
             usage_dict, ("total_tokens", "totalTokens", "tokens", "token_count")
         )
@@ -322,7 +370,8 @@ class CodexStatsParser:
 
         return TokenUsage(
             input_tokens=input_tokens or 0,
-            output_tokens=output_tokens or 0,
+            output_tokens=(output_tokens or 0) + reasoning_tokens,
+            cache_read_tokens=cached_input_tokens,
         )
 
     def _find_usage_dict(self, entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -336,7 +385,58 @@ class CodexStatsParser:
                 nested_usage = nested.get("usage")
                 if isinstance(nested_usage, dict):
                     return nested_usage
+
+        # Codex token_count event format
+        payload = entry.get("payload")
+        if isinstance(payload, dict):
+            info = payload.get("info")
+            if isinstance(info, dict):
+                totals = info.get("total_token_usage")
+                if isinstance(totals, dict):
+                    return totals
         return None
+
+    def _extract_token_count_totals(self, entry: Dict[str, Any]) -> Optional[TokenUsage]:
+        if entry.get("type") != "event_msg":
+            return None
+        payload = entry.get("payload")
+        if not isinstance(payload, dict) or payload.get("type") != "token_count":
+            return None
+        info = payload.get("info")
+        if not isinstance(info, dict):
+            return None
+        totals = info.get("total_token_usage")
+        if not isinstance(totals, dict):
+            return None
+
+        input_tokens = self._get_int_value(totals, ("input_tokens", "inputTokens")) or 0
+        output_tokens = self._get_int_value(totals, ("output_tokens", "outputTokens")) or 0
+        reasoning_tokens = (
+            self._get_int_value(
+                totals,
+                ("reasoning_output_tokens", "reasoningOutputTokens"),
+            )
+            or 0
+        )
+        cached_input_tokens = (
+            self._get_int_value(totals, ("cached_input_tokens", "cachedInputTokens")) or 0
+        )
+
+        return TokenUsage(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens + reasoning_tokens,
+            cache_read_tokens=cached_input_tokens,
+        )
+
+    def _subtract_usage(self, current: TokenUsage, previous: TokenUsage) -> TokenUsage:
+        return TokenUsage(
+            input_tokens=max(0, current.input_tokens - previous.input_tokens),
+            output_tokens=max(0, current.output_tokens - previous.output_tokens),
+            cache_write_tokens=max(
+                0, current.cache_write_tokens - previous.cache_write_tokens
+            ),
+            cache_read_tokens=max(0, current.cache_read_tokens - previous.cache_read_tokens),
+        )
 
     def _extract_cost(self, entry: Dict[str, Any]) -> Optional[float]:
         for key in ("cost", "cost_usd", "total_cost", "usd_cost", "price"):
@@ -438,6 +538,8 @@ class CodexStatsParser:
         bucket = buckets[usage_date]
         bucket["tokens"].input_tokens += usage.input_tokens
         bucket["tokens"].output_tokens += usage.output_tokens
+        bucket["tokens"].cache_write_tokens += usage.cache_write_tokens
+        bucket["tokens"].cache_read_tokens += usage.cache_read_tokens
         if cost is not None:
             bucket["cost"] += cost
             bucket["cost_seen"] = True

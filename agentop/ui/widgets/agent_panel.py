@@ -82,6 +82,14 @@ def _format_timestamp(timestamp: Optional[datetime]) -> str:
     return timestamp.strftime("%Y-%m-%d %H:%M")
 
 
+def _shorten_text(value: Optional[str], max_len: int = 48) -> str:
+    if not value:
+        return ""
+    if len(value) <= max_len:
+        return value
+    return "..." + value[-(max_len - 3) :]
+
+
 class ClaudeCodePanel(Static):
     """Panel for displaying Claude Code metrics."""
 
@@ -138,17 +146,21 @@ class ClaudeCodePanel(Static):
             if len(metrics.processes) > 3:
                 proc_info.append(f"+{len(metrics.processes) - 3} more")
 
-            proc_table.add_row("Processes:", f"{len(metrics.processes)} running")
-            proc_table.add_row("", "[dim]" + ", ".join(proc_info) + "[/dim]")
             proc_table.add_row(
-                "CPU:", f"{metrics.total_cpu:.1f}% {_bar(metrics.total_cpu, 100, 15)}"
+                "Processes:", f"{len(metrics.processes)} running • " + ", ".join(proc_info)
             )
-            proc_table.add_row("Memory:", f"{metrics.total_memory_mb:.0f} MB")
 
             # Uptime for first process
             if metrics.processes:
                 uptime_hours = metrics.processes[0].uptime / 3600
-                proc_table.add_row("Uptime:", f"{uptime_hours:.1f} hours")
+                proc_table.add_row(
+                    "Runtime:",
+                    (
+                        f"CPU {metrics.total_cpu:.1f}% • "
+                        f"RAM {metrics.total_memory_mb:.0f} MB • "
+                        f"Up {uptime_hours:.1f}h"
+                    ),
+                )
         else:
             proc_table.add_row("Processes:", "[dim]No processes running[/dim]")
 
@@ -179,36 +191,23 @@ class ClaudeCodePanel(Static):
         month_tokens = metrics.tokens_this_month
         if month_tokens.total_tokens > 0:
             token_table.add_row(
-                "Tokens (Month):",
-                f"[bold]{month_tokens.total_tokens:,}[/bold] total",
+                "Tokens:",
+                (
+                    f"Month [bold]{month_tokens.total_tokens:,}[/bold] • "
+                    f"In {month_tokens.input_tokens:,} • "
+                    f"Out {month_tokens.output_tokens:,}"
+                ),
             )
-
-            # Input/Output breakdown
-            total = month_tokens.total_tokens or 1
-
-            if month_tokens.input_tokens > 0:
-                input_pct = (month_tokens.input_tokens / total) * 100
-                token_table.add_row(
-                    "  Input:",
-                    f"{month_tokens.input_tokens:,} {_bar(input_pct, 100, 15)} {input_pct:.0f}%",
-                )
-
-            if month_tokens.output_tokens > 0:
-                output_pct = (month_tokens.output_tokens / total) * 100
-                token_table.add_row(
-                    "  Output:",
-                    f"{month_tokens.output_tokens:,} {_bar(output_pct, 100, 15)} {output_pct:.0f}%",
-                )
 
             cache_w = getattr(month_tokens, "cache_write_tokens", 0)
             cache_r = getattr(month_tokens, "cache_read_tokens", 0)
             if cache_w > 0 or cache_r > 0:
                 token_table.add_row(
-                    "  Cache W/R:",
-                    f"{cache_w:,} / {cache_r:,}",
+                    "Cache:",
+                    f"W/R {cache_w:,} / {cache_r:,}",
                 )
         else:
-            token_table.add_row("Tokens (Month):", "[dim]No usage this month[/dim]")
+            token_table.add_row("Tokens:", "[dim]No usage this month[/dim]")
 
         token_table.add_row(
             "Stats updated:",
@@ -333,17 +332,21 @@ class CodexPanel(Static):
             if len(metrics.processes) > 3:
                 proc_info.append(f"+{len(metrics.processes) - 3} more")
 
-            proc_table.add_row("Processes:", f"{len(metrics.processes)} running")
-            proc_table.add_row("", "[dim]" + ", ".join(proc_info) + "[/dim]")
             proc_table.add_row(
-                "CPU:", f"{metrics.total_cpu:.1f}% {_bar(metrics.total_cpu, 100, 15)}"
+                "Processes:", f"{len(metrics.processes)} running • " + ", ".join(proc_info)
             )
-            proc_table.add_row("Memory:", f"{metrics.total_memory_mb:.0f} MB")
 
             # Uptime for first process
             if metrics.processes:
                 uptime_hours = metrics.processes[0].uptime / 3600
-                proc_table.add_row("Uptime:", f"{uptime_hours:.1f} hours")
+                proc_table.add_row(
+                    "Runtime:",
+                    (
+                        f"CPU {metrics.total_cpu:.1f}% • "
+                        f"RAM {metrics.total_memory_mb:.0f} MB • "
+                        f"Up {uptime_hours:.1f}h"
+                    ),
+                )
         else:
             proc_table.add_row("Processes:", "[dim]No processes running[/dim]")
 
@@ -364,6 +367,36 @@ class CodexPanel(Static):
 
         content_parts.append(Text(""))  # Spacer
         content_parts.append(session_table)
+
+        # === TOKEN USAGE ===
+        token_table = Table.grid(padding=(0, 2), expand=True)
+        token_table.add_column(style="bold cyan", width=18)
+        token_table.add_column()
+
+        month_tokens = metrics.tokens_this_month
+        today_tokens = metrics.tokens_today
+        if month_tokens.total_tokens > 0 or today_tokens.total_tokens > 0:
+            display_tokens = (
+                month_tokens.total_tokens
+                if month_tokens.total_tokens > 0
+                else today_tokens.total_tokens
+            )
+            period_label = "this month" if month_tokens.total_tokens > 0 else "today"
+            token_table.add_row(
+                "Tokens:",
+                f"[bold]{display_tokens:,}[/bold] {period_label}",
+            )
+        else:
+            token_table.add_row("Tokens:", "[dim]No local usage data[/dim]")
+
+        if metrics.usage_source:
+            token_table.add_row(
+                "Source:",
+                f"[dim]{_shorten_text(metrics.usage_source)}[/dim]",
+            )
+
+        content_parts.append(Text(""))  # Spacer
+        content_parts.append(token_table)
 
         # === RATE LIMITS ===
         rate_table = Table.grid(padding=(0, 2), expand=True)
